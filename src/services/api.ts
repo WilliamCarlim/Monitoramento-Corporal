@@ -1,0 +1,291 @@
+import { WeightRecord, MeasureRecord, AssistantMessage } from '../types';
+import {
+  getStoredWeights,
+  saveStoredWeights,
+  getStoredMeasures,
+  saveStoredMeasures,
+  getStoredProfile,
+  getApiSettings
+} from './storage';
+
+export const SPREADSHEET_ID = '1VvS_1QHdbXDEDM1Zju4FcrWriLfeaZwuqBdp9HIMi-U';
+
+// Interface for API responses
+interface FetchResponse<T> {
+  data: T;
+  source: 'cloud' | 'script' | 'local';
+  error?: string;
+}
+
+export async function fetchWeights(): Promise<FetchResponse<WeightRecord[]>> {
+  const settings = getApiSettings();
+
+  // Try 1: Cloudflare Pages Function endpoint
+  try {
+    const res = await fetch('/api/weights');
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        saveStoredWeights(data);
+        return { data, source: 'cloud' };
+      }
+    }
+  } catch {
+    // Ignore and proceed to fallback
+  }
+
+  // Try 2: Direct Google Apps Script URL if configured in settings
+  if (settings.scriptUrl) {
+    try {
+      const res = await fetch(`${settings.scriptUrl}?action=getWeights`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.status === 'success' && Array.isArray(json.data)) {
+          saveStoredWeights(json.data);
+          return { data: json.data, source: 'script' };
+        }
+      }
+    } catch {
+      // Continue to local
+    }
+  }
+
+  // Fallback: Local storage
+  return { data: getStoredWeights(), source: 'local' };
+}
+
+export async function addWeightRecord(record: WeightRecord): Promise<{ success: boolean; source: 'cloud' | 'script' | 'local'; error?: string }> {
+  const currentWeights = getStoredWeights();
+  const profile = getStoredProfile();
+
+  // Calculate variations
+  const pesoInicial = profile.pesoInicial || 113.250;
+  const ultimoRegistro = currentWeights.length > 0 ? currentWeights[currentWeights.length - 1] : null;
+
+  const variacaoAnterior = ultimoRegistro ? Number((record.peso - ultimoRegistro.peso).toFixed(3)) : 0;
+  const variacaoInicial = Number((record.peso - pesoInicial).toFixed(3));
+  const imc = Number((record.peso / (profile.alturaMetros * profile.alturaMetros)).toFixed(2));
+
+  const enrichedRecord: WeightRecord = {
+    ...record,
+    id: `w-${Date.now()}`,
+    variacaoAnterior,
+    variacaoInicial,
+    imc,
+  };
+
+  const settings = getApiSettings();
+
+  // Try 1: Cloudflare Pages Function
+  try {
+    const res = await fetch('/api/weights', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(enrichedRecord),
+    });
+    if (res.ok) {
+      const updated = [...currentWeights, enrichedRecord];
+      saveStoredWeights(updated);
+      return { success: true, source: 'cloud' };
+    }
+  } catch {}
+
+  // Try 2: Direct Google Apps Script Web App
+  if (settings.scriptUrl) {
+    try {
+      const res = await fetch(settings.scriptUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' }, // Avoid CORS preflight with Apps Script
+        body: JSON.stringify({ action: 'addWeight', data: enrichedRecord }),
+      });
+      if (res.ok) {
+        const updated = [...currentWeights, enrichedRecord];
+        saveStoredWeights(updated);
+        return { success: true, source: 'script' };
+      }
+    } catch {}
+  }
+
+  // Local save
+  const updated = [...currentWeights, enrichedRecord];
+  saveStoredWeights(updated);
+  return { success: true, source: 'local' };
+}
+
+export async function fetchMeasures(): Promise<FetchResponse<MeasureRecord[]>> {
+  const settings = getApiSettings();
+
+  // Try 1: Cloudflare Pages Function
+  try {
+    const res = await fetch('/api/measures');
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        saveStoredMeasures(data);
+        return { data, source: 'cloud' };
+      }
+    }
+  } catch {}
+
+  // Try 2: Direct Google Apps Script
+  if (settings.scriptUrl) {
+    try {
+      const res = await fetch(`${settings.scriptUrl}?action=getMeasures`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.status === 'success' && Array.isArray(json.data)) {
+          saveStoredMeasures(json.data);
+          return { data: json.data, source: 'script' };
+        }
+      }
+    } catch {}
+  }
+
+  return { data: getStoredMeasures(), source: 'local' };
+}
+
+export async function addMeasureRecord(record: MeasureRecord): Promise<{ success: boolean; source: 'cloud' | 'script' | 'local'; error?: string }> {
+  const currentMeasures = getStoredMeasures();
+  const enrichedRecord: MeasureRecord = {
+    ...record,
+    id: `m-${Date.now()}`,
+  };
+
+  const settings = getApiSettings();
+
+  // Try 1: Cloudflare Pages Function
+  try {
+    const res = await fetch('/api/measures', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(enrichedRecord),
+    });
+    if (res.ok) {
+      const updated = [...currentMeasures, enrichedRecord];
+      saveStoredMeasures(updated);
+      return { success: true, source: 'cloud' };
+    }
+  } catch {}
+
+  // Try 2: Direct Google Apps Script
+  if (settings.scriptUrl) {
+    try {
+      const res = await fetch(settings.scriptUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'addMeasure', data: enrichedRecord }),
+      });
+      if (res.ok) {
+        const updated = [...currentMeasures, enrichedRecord];
+        saveStoredMeasures(updated);
+        return { success: true, source: 'script' };
+      }
+    } catch {}
+  }
+
+  // Local save
+  const updated = [...currentMeasures, enrichedRecord];
+  saveStoredMeasures(updated);
+  return { success: true, source: 'local' };
+}
+
+export async function askGemini(
+  prompt: string,
+  history: AssistantMessage[] = []
+): Promise<{ text: string; error?: string }> {
+  const weights = getStoredWeights();
+  const measures = getStoredMeasures();
+  const profile = getStoredProfile();
+
+  const payload = {
+    prompt,
+    history: history.slice(-6).map(h => ({ role: h.role, parts: [{ text: h.content }] })),
+    context: {
+      profile,
+      weightsRecent: weights.slice(-10),
+      measuresRecent: measures.slice(-5),
+      spreadsheetId: SPREADSHEET_ID,
+    },
+  };
+
+  // Try 1: Cloudflare backend endpoint /api/gemini
+  try {
+    const res = await fetch('/api/gemini', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.text) {
+        return { text: data.text };
+      }
+    }
+  } catch {}
+
+  // Try 2: Direct Gemini API key if configured locally
+  const settings = getApiSettings();
+  if (settings.geminiApiKey) {
+    try {
+      const directUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${settings.geminiApiKey}`;
+      const systemInstruction = `Você é um assistente especialista em saúde, avaliação física e composição corporal integrado ao sistema de monitoramento pessoal.
+Dados do usuário:
+- Altura: ${profile.alturaMetros}m
+- Peso Inicial: ${profile.pesoInicial} kg em ${profile.dataInicio}
+- Histórico de pesos recentes: ${JSON.stringify(weights.slice(-5))}
+- Histórico de medidas recentes: ${JSON.stringify(measures.slice(-3))}
+
+Diretrizes:
+1. Responda de forma motivadora, empática, técnica e objetiva em Português do Brasil.
+2. Explique oscilações naturais (retenção hídrica pós-treino, glicogênio, sódio, intestino).
+3. Leve em conta a diferença entre usar trena metálica vs fita métrica maleável (ex: trena pode superestimar ou achatar tecidos dependendo da tensão).
+4. Destaque variações positivas e dê sugestões práticas de hidratação, sono e consistência.
+5. Use formatação markdown limpa (tópicos, negritos).`;
+
+      const body = {
+        systemInstruction: { parts: [{ text: systemInstruction }] },
+        contents: [
+          ...payload.history,
+          { role: 'user', parts: [{ text: prompt }] },
+        ],
+      };
+
+      const res = await fetch(directUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        const text = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text) return { text };
+      }
+    } catch (e: any) {
+      console.warn('Direct Gemini call failed', e);
+    }
+  }
+
+  // Fallback assistant response with smart analysis when offline/no key configured yet
+  const lastWeight = weights[weights.length - 1];
+  const initialWeight = profile.pesoInicial;
+  const diffTotal = lastWeight ? (lastWeight.peso - initialWeight).toFixed(3) : '0';
+  const lastAbdomen = measures[measures.length - 1]?.abdomen || 127;
+
+  return {
+    text: `### 📊 Análise Geral do Assistente (Modo de Demonstração / Offline)
+
+Olá! Aqui está o resumo das suas métricas atuais baseado no seu histórico registrado:
+
+* **Peso Inicial:** ${initialWeight} kg (16/11/2026)
+* **Peso Mais Recente:** ${lastWeight?.peso || 113.25} kg (Contexto: *${lastWeight?.contexto || 'Pós-academia'}*)
+* **Variação Total:** ${Number(diffTotal) > 0 ? `+${diffTotal} kg` : `${diffTotal} kg`}
+* **IMC Atual:** ${lastWeight?.imc || 34.95} (Altura de referência: ${profile.alturaMetros} m)
+* **Última Medida Abdominal:** ${lastAbdomen} cm
+
+#### 💡 Observações Importantes:
+1. **Oscilações Pós-Treino:** A pesagem após treino reflete inflamação muscular temporária, hidratação e reposição de carboidratos/almoço. O padrão-ouro de comparação é a pesagem **em jejum pela manhã**, após urinar.
+2. **Método de Medição (Trena vs. Fita Métrica):** Foi registrado o uso de trena com expiração forçada (${lastAbdomen} cm). Recomenda-se adotar uma **fita métrica maleável de alfaiate** e medir em respiração normal e relaxada para melhor reprodutibilidade semanal.
+3. **Próximos Passos:** Mantenha os registros constantes. Para ativar análises personalizadas com inteligência artificial completa, certifique-se de configurar a \`GEMINI_API_KEY\` no Cloudflare Pages ou nas Configurações da página.`,
+  };
+}

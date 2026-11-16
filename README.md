@@ -119,3 +119,4 @@ Pronto! Todo registro feito no site será inserido diretamente nas abas da sua p
 * **Backend:** Cloudflare Pages Functions (Edge Workers com WebCrypto).
 * **Banco de Dados:** Google Sheets API / Google Apps Script.
 * **IA:** Google Gemini 1.5 Flash API.
+# Monitoramento-Corporal

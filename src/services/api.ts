@@ -17,6 +17,63 @@ interface FetchResponse<T> {
   error?: string;
 }
 
+function sanitizeWeights(list: any[]): WeightRecord[] {
+  if (!Array.isArray(list)) return [];
+  return list
+    .filter((w) => {
+      if (!w || !w.data) return false;
+      const dataStr = String(w.data).trim().toLowerCase();
+      // Ignore titles or header rows
+      if (dataStr === 'data' || dataStr.includes('acompanhamento') || dataStr.includes('controle')) return false;
+      // Must have a positive weight
+      const p = typeof w.peso === 'number' ? w.peso : parseFloat(String(w.peso).replace(',', '.'));
+      return !isNaN(p) && p > 30 && p < 350;
+    })
+    .map((w) => {
+      let cleanDate = String(w.data).trim();
+      if (cleanDate.includes('GMT') || cleanDate.includes('T')) {
+        const d = new Date(cleanDate);
+        if (!isNaN(d.getTime())) {
+          cleanDate = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+        }
+      }
+      return {
+        ...w,
+        data: cleanDate,
+      };
+    });
+}
+
+function sanitizeMeasures(list: any[]): MeasureRecord[] {
+  if (!Array.isArray(list)) return [];
+  return list
+    .filter((m) => {
+      if (!m || !m.data) return false;
+      const dataStr = String(m.data).trim().toLowerCase();
+      if (dataStr === 'data' || dataStr.includes('acompanhamento') || dataStr.includes('histórico')) return false;
+      // Check if at least one measurement is positive
+      const hasAny = [
+        m.abdomen, m.cintura, m.quadril, m.torax, m.pescoco,
+        m.bracoDir, m.bracoEsq, m.antebracoDir, m.antebracoEsq,
+        m.coxaDir, m.coxaEsq, m.panturrilhaDir, m.panturrilhaEsq
+      ].some((v) => typeof v === 'number' && v > 0);
+      return hasAny;
+    })
+    .map((m) => {
+      let cleanDate = String(m.data).trim();
+      if (cleanDate.includes('GMT') || cleanDate.includes('T')) {
+        const d = new Date(cleanDate);
+        if (!isNaN(d.getTime())) {
+          cleanDate = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+        }
+      }
+      return {
+        ...m,
+        data: cleanDate,
+      };
+    });
+}
+
 export async function fetchWeights(): Promise<FetchResponse<WeightRecord[]>> {
   const settings = getApiSettings();
 
@@ -25,9 +82,12 @@ export async function fetchWeights(): Promise<FetchResponse<WeightRecord[]>> {
     const res = await fetch('/api/weights');
     if (res.ok) {
       const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        saveStoredWeights(data);
-        return { data, source: 'cloud' };
+      if (Array.isArray(data)) {
+        const sanitized = sanitizeWeights(data);
+        if (sanitized.length > 0) {
+          saveStoredWeights(sanitized);
+          return { data: sanitized, source: 'cloud' };
+        }
       }
     }
   } catch {
@@ -41,8 +101,11 @@ export async function fetchWeights(): Promise<FetchResponse<WeightRecord[]>> {
       if (res.ok) {
         const json = await res.json();
         if (json.status === 'success' && Array.isArray(json.data)) {
-          saveStoredWeights(json.data);
-          return { data: json.data, source: 'script' };
+          const sanitized = sanitizeWeights(json.data);
+          if (sanitized.length > 0) {
+            saveStoredWeights(sanitized);
+            return { data: sanitized, source: 'script' };
+          }
         }
       }
     } catch {
@@ -51,7 +114,7 @@ export async function fetchWeights(): Promise<FetchResponse<WeightRecord[]>> {
   }
 
   // Fallback: Local storage
-  return { data: getStoredWeights(), source: 'local' };
+  return { data: sanitizeWeights(getStoredWeights()), source: 'local' };
 }
 
 export async function addWeightRecord(record: WeightRecord): Promise<{ success: boolean; source: 'cloud' | 'script' | 'local'; error?: string }> {
@@ -120,9 +183,12 @@ export async function fetchMeasures(): Promise<FetchResponse<MeasureRecord[]>> {
     const res = await fetch('/api/measures');
     if (res.ok) {
       const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        saveStoredMeasures(data);
-        return { data, source: 'cloud' };
+      if (Array.isArray(data)) {
+        const sanitized = sanitizeMeasures(data);
+        if (sanitized.length > 0) {
+          saveStoredMeasures(sanitized);
+          return { data: sanitized, source: 'cloud' };
+        }
       }
     }
   } catch {}
@@ -134,14 +200,17 @@ export async function fetchMeasures(): Promise<FetchResponse<MeasureRecord[]>> {
       if (res.ok) {
         const json = await res.json();
         if (json.status === 'success' && Array.isArray(json.data)) {
-          saveStoredMeasures(json.data);
-          return { data: json.data, source: 'script' };
+          const sanitized = sanitizeMeasures(json.data);
+          if (sanitized.length > 0) {
+            saveStoredMeasures(sanitized);
+            return { data: sanitized, source: 'script' };
+          }
         }
       }
     } catch {}
   }
 
-  return { data: getStoredMeasures(), source: 'local' };
+  return { data: sanitizeMeasures(getStoredMeasures()), source: 'local' };
 }
 
 export async function addMeasureRecord(record: MeasureRecord): Promise<{ success: boolean; source: 'cloud' | 'script' | 'local'; error?: string }> {

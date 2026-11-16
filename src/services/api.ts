@@ -108,10 +108,9 @@ export async function fetchWeights(): Promise<FetchResponse<WeightRecord[]>> {
       const data = await res.json();
       if (Array.isArray(data)) {
         const sanitized = sanitizeWeights(data);
-        if (sanitized.length > 0) {
-          saveStoredWeights(sanitized);
-          return { data: sanitized, source: 'cloud' };
-        }
+        const finalData = sanitized.length > 0 ? sanitized : (data.length > 0 ? data : getStoredWeights());
+        saveStoredWeights(finalData);
+        return { data: finalData, source: 'cloud' };
       }
     }
   } catch {}
@@ -124,10 +123,9 @@ export async function fetchWeights(): Promise<FetchResponse<WeightRecord[]>> {
         const json = await res.json();
         if (json.status === 'success' && Array.isArray(json.data)) {
           const sanitized = sanitizeWeights(json.data);
-          if (sanitized.length > 0) {
-            saveStoredWeights(sanitized);
-            return { data: sanitized, source: 'script' };
-          }
+          const finalData = sanitized.length > 0 ? sanitized : json.data;
+          saveStoredWeights(finalData);
+          return { data: finalData, source: 'script' };
         }
       }
     } catch {}
@@ -205,10 +203,9 @@ export async function fetchMeasures(): Promise<FetchResponse<MeasureRecord[]>> {
       const data = await res.json();
       if (Array.isArray(data)) {
         const sanitized = sanitizeMeasures(data);
-        if (sanitized.length > 0) {
-          saveStoredMeasures(sanitized);
-          return { data: sanitized, source: 'cloud' };
-        }
+        const finalData = sanitized.length > 0 ? sanitized : (data.length > 0 ? data : getStoredMeasures());
+        saveStoredMeasures(finalData);
+        return { data: finalData, source: 'cloud' };
       }
     }
   } catch {}
@@ -221,10 +218,9 @@ export async function fetchMeasures(): Promise<FetchResponse<MeasureRecord[]>> {
         const json = await res.json();
         if (json.status === 'success' && Array.isArray(json.data)) {
           const sanitized = sanitizeMeasures(json.data);
-          if (sanitized.length > 0) {
-            saveStoredMeasures(sanitized);
-            return { data: sanitized, source: 'script' };
-          }
+          const finalData = sanitized.length > 0 ? sanitized : json.data;
+          saveStoredMeasures(finalData);
+          return { data: finalData, source: 'script' };
         }
       }
     } catch {}

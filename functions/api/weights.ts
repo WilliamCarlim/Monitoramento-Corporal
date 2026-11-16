@@ -21,7 +21,9 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   // 1. Check Apps Script URL
   if (env.GOOGLE_SCRIPT_URL) {
     try {
-      const res = await fetch(`${env.GOOGLE_SCRIPT_URL}?action=getWeights`);
+      const res = await fetch(`${env.GOOGLE_SCRIPT_URL}?action=getWeights`, {
+        redirect: 'follow',
+      });
       if (res.ok) {
         const json: any = await res.json();
         if (json.status === 'success' && Array.isArray(json.data)) {

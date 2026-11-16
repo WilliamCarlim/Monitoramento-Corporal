@@ -19,25 +19,29 @@ export const Navbar: React.FC<NavbarProps> = ({
     switch (connectionSource) {
       case 'cloud':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            Cloudflare Sheets
+            Planilha Sincronizada
           </span>
         );
       case 'script':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
-            Apps Script Web App
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+            Planilha Conectada (Web App)
           </span>
         );
       case 'local':
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-700/60 text-slate-300 border border-slate-600">
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-            Modo Local / Sincronizável
-          </span>
+          <button
+            onClick={onOpenSettings}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-300 border border-amber-500/30 hover:bg-amber-500/20 transition cursor-pointer"
+            title="Clique para conectar a Planilha nas Configurações"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+            Conectar Planilha
+          </button>
         );
     }
   };

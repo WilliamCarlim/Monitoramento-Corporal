@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, Scale, Ruler, History, Sparkles, Settings, ExternalLink } from 'lucide-react';
+import { Activity, Scale, Ruler, History, Sparkles, Settings, ExternalLink, RefreshCw } from 'lucide-react';
 import { SPREADSHEET_ID } from '../services/api';
 
 interface NavbarProps {
@@ -7,6 +7,9 @@ interface NavbarProps {
   setActiveTab: (tab: 'dashboard' | 'weight' | 'measure' | 'history' | 'assistant') => void;
   onOpenSettings: () => void;
   connectionSource: 'cloud' | 'script' | 'local';
+  onSync: () => void;
+  isSyncing: boolean;
+  lastSyncTime?: string;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -14,6 +17,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   setActiveTab,
   onOpenSettings,
   connectionSource,
+  onSync,
+  isSyncing,
+  lastSyncTime,
 }) => {
   const getBadge = () => {
     switch (connectionSource) {
@@ -28,7 +34,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-            Planilha Conectada (Web App)
+            Planilha Conectada
           </span>
         );
       case 'local':
@@ -40,7 +46,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             title="Clique para conectar a Planilha nas Configurações"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-            Conectar Planilha
+            Modo Local / Conectar
           </button>
         );
     }
@@ -127,8 +133,21 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           </nav>
 
-          {/* Right actions */}
+          {/* Right actions: Sync button, Badge, Sheets link, Settings */}
           <div className="flex items-center gap-2 sm:gap-3">
+            {/* Sync Button */}
+            <button
+              onClick={onSync}
+              disabled={isSyncing}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold shadow-sm transition active:scale-95 disabled:opacity-50 cursor-pointer"
+              title={lastSyncTime ? `Última sincronização: ${lastSyncTime}` : 'Sincronizar com a Planilha'}
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-emerald-400 ${isSyncing ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">
+                {isSyncing ? 'Sincronizando...' : 'Sincronizar'}
+              </span>
+            </button>
+
             <div className="hidden lg:block">{getBadge()}</div>
 
             <a

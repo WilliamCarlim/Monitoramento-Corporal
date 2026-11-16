@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Navbar } from './components/Navbar';
 import { Dashboard } from './components/Dashboard';
 import { WeightForm } from './components/WeightForm';
@@ -6,6 +6,7 @@ import { MeasureForm } from './components/MeasureForm';
 import { HistoryTable } from './components/HistoryTable';
 import { GeminiAssistant } from './components/GeminiAssistant';
 import { SettingsModal } from './components/SettingsModal';
+import { CheckCircle2 } from 'lucide-react';
 
 import { WeightRecord, MeasureRecord, UserProfile } from './types';
 import {
@@ -24,9 +25,13 @@ export const App: React.FC = () => {
   const [connectionSource, setConnectionSource] = useState<'cloud' | 'script' | 'local'>('local');
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [initialLoading, setInitialLoading] = useState<boolean>(true);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [lastSyncTime, setLastSyncTime] = useState<string>('');
+  const [syncToast, setSyncToast] = useState<string | null>(null);
 
-  // Load initial data
-  const loadData = async () => {
+  // Load and sync data from Cloud / Sheets
+  const syncData = useCallback(async (silent = false) => {
+    if (!silent) setIsSyncing(true);
     try {
       const [weightsRes, measuresRes] = await Promise.all([
         fetchWeights(),
@@ -35,42 +40,87 @@ export const App: React.FC = () => {
 
       setWeights(weightsRes.data);
       setMeasures(measuresRes.data);
-      setConnectionSource(weightsRes.source);
+
+      const resolvedSource = weightsRes.source !== 'local' ? weightsRes.source : measuresRes.source;
+      setConnectionSource(resolvedSource);
+
+      const timeStr = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      setLastSyncTime(timeStr);
+
+      if (!silent) {
+        setSyncToast(`Planilha sincronizada! (${weightsRes.data.length} pesagens)`);
+        setTimeout(() => setSyncToast(null), 3000);
+      }
     } catch (e) {
-      console.error('Failed to load initial data', e);
+      console.error('Failed to sync data', e);
     } finally {
+      if (!silent) setIsSyncing(false);
       setInitialLoading(false);
     }
-  };
-
-  useEffect(() => {
-    loadData();
   }, []);
 
+  // 1. Sincroniza ao carregar a página pela primeira vez
+  useEffect(() => {
+    syncData(false);
+  }, [syncData]);
+
+  // 2. Sincroniza automaticamente quando o usuário retorna para a aba do navegador
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        syncData(true);
+      }
+    };
+    const handleFocus = () => {
+      syncData(true);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [syncData]);
+
+  // 3. Sincroniza automaticamente após adicionar registro de peso
   const handleWeightSubmit = async (record: WeightRecord) => {
     const res = await addWeightRecord(record);
     if (res.success) {
-      await loadData();
+      await syncData(true);
     }
     return res;
   };
 
+  // 4. Sincroniza automaticamente após adicionar registro de medidas
   const handleMeasureSubmit = async (record: MeasureRecord) => {
     const res = await addMeasureRecord(record);
     if (res.success) {
-      await loadData();
+      await syncData(true);
     }
     return res;
   };
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-white">
+      {/* Toast de notificação de sincronização */}
+      {syncToast && (
+        <div className="fixed top-20 right-4 z-50 bg-emerald-950/90 border border-emerald-500/50 text-emerald-300 px-4 py-2.5 rounded-xl shadow-xl backdrop-blur-md text-xs font-semibold flex items-center gap-2 animate-bounce">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+          <span>{syncToast}</span>
+        </div>
+      )}
+
       {/* Navigation Header */}
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onOpenSettings={() => setIsSettingsOpen(true)}
         connectionSource={connectionSource}
+        onSync={() => syncData(false)}
+        isSyncing={isSyncing}
+        lastSyncTime={lastSyncTime}
       />
 
       {/* Main Content Area */}
@@ -78,7 +128,7 @@ export const App: React.FC = () => {
         {initialLoading ? (
           <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
             <div className="w-10 h-10 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></div>
-            <p className="text-slate-400 text-sm">Carregando dados da planilha corporal...</p>
+            <p className="text-slate-400 text-sm">Carregando e sincronizando dados da planilha...</p>
           </div>
         ) : (
           <>

@@ -20,33 +20,70 @@ interface FetchResponse<T> {
 function sanitizeWeights(list: any[]): WeightRecord[] {
   if (!Array.isArray(list)) return [];
   return list
-    .filter((w) => {
-      if (!w || !w.data) return false;
-      const dataStr = String(w.data).trim().toLowerCase();
-      // Ignore titles or header rows
-      if (dataStr === 'data' || dataStr.includes('acompanhamento') || dataStr.includes('controle')) return false;
-      // Must have a positive weight
-      const p = typeof w.peso === 'number' ? w.peso : parseFloat(String(w.peso).replace(',', '.'));
-      return !isNaN(p) && p > 30 && p < 350;
-    })
     .map((w) => {
-      let cleanDate = String(w.data).trim();
+      // Auto-heal shifted columns or parse clean values
+      let p = typeof w.peso === 'number' ? w.peso : parseFloat(String(w.peso).replace(/\./g, '').replace(',', '.'));
+      let varAnt = typeof w.variacaoAnterior === 'number' ? w.variacaoAnterior : parseFloat(String(w.variacaoAnterior).replace(/\./g, '').replace(',', '.'));
+      let varIni = typeof w.variacaoInicial === 'number' ? w.variacaoInicial : parseFloat(String(w.variacaoInicial).replace(/\./g, '').replace(',', '.'));
+
+      // If peso was shifted to variacaoAnterior by an old script version
+      if ((isNaN(p) || p <= 30) && !isNaN(varAnt) && varAnt > 30) {
+        p = varAnt;
+        varAnt = 0;
+      }
+
+      let cleanDate = String(w.data || '').trim();
       if (cleanDate.includes('GMT') || cleanDate.includes('T')) {
         const d = new Date(cleanDate);
         if (!isNaN(d.getTime())) {
           cleanDate = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
         }
       }
+
       return {
         ...w,
+        peso: p,
+        variacaoAnterior: isNaN(varAnt) ? 0 : varAnt,
+        variacaoInicial: isNaN(varIni) ? 0 : varIni,
         data: cleanDate,
       };
+    })
+    .filter((w) => {
+      if (!w || !w.data) return false;
+      const dataStr = String(w.data).trim().toLowerCase();
+      // Ignore titles or header rows
+      if (dataStr === 'data' || dataStr.includes('acompanhamento') || dataStr.includes('controle')) return false;
+      return typeof w.peso === 'number' && w.peso > 30 && w.peso < 350;
     });
 }
 
 function sanitizeMeasures(list: any[]): MeasureRecord[] {
   if (!Array.isArray(list)) return [];
   return list
+    .map((m) => {
+      let cleanDate = String(m.data || '').trim();
+      if (cleanDate.includes('GMT') || cleanDate.includes('T')) {
+        const d = new Date(cleanDate);
+        if (!isNaN(d.getTime())) {
+          cleanDate = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+        }
+      }
+
+      // Auto-heal if 127 was mapped to quadril due to margin column
+      let abdomen = m.abdomen;
+      let quadril = m.quadril;
+      if ((!abdomen || abdomen === 0) && quadril === 127) {
+        abdomen = 127;
+        quadril = undefined;
+      }
+
+      return {
+        ...m,
+        data: cleanDate,
+        abdomen,
+        quadril,
+      };
+    })
     .filter((m) => {
       if (!m || !m.data) return false;
       const dataStr = String(m.data).trim().toLowerCase();
@@ -58,19 +95,6 @@ function sanitizeMeasures(list: any[]): MeasureRecord[] {
         m.coxaDir, m.coxaEsq, m.panturrilhaDir, m.panturrilhaEsq
       ].some((v) => typeof v === 'number' && v > 0);
       return hasAny;
-    })
-    .map((m) => {
-      let cleanDate = String(m.data).trim();
-      if (cleanDate.includes('GMT') || cleanDate.includes('T')) {
-        const d = new Date(cleanDate);
-        if (!isNaN(d.getTime())) {
-          cleanDate = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-        }
-      }
-      return {
-        ...m,
-        data: cleanDate,
-      };
     });
 }
 
@@ -79,7 +103,7 @@ export async function fetchWeights(): Promise<FetchResponse<WeightRecord[]>> {
 
   // Try 1: Cloudflare Pages Function endpoint
   try {
-    const res = await fetch('/api/weights');
+    const res = await fetch('/api/weights', { cache: 'no-store' });
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data)) {
@@ -90,14 +114,12 @@ export async function fetchWeights(): Promise<FetchResponse<WeightRecord[]>> {
         }
       }
     }
-  } catch {
-    // Ignore and proceed to fallback
-  }
+  } catch {}
 
   // Try 2: Direct Google Apps Script URL if configured in settings
   if (settings.scriptUrl) {
     try {
-      const res = await fetch(`${settings.scriptUrl}?action=getWeights`);
+      const res = await fetch(`${settings.scriptUrl}?action=getWeights`, { cache: 'no-store' });
       if (res.ok) {
         const json = await res.json();
         if (json.status === 'success' && Array.isArray(json.data)) {
@@ -108,9 +130,7 @@ export async function fetchWeights(): Promise<FetchResponse<WeightRecord[]>> {
           }
         }
       }
-    } catch {
-      // Continue to local
-    }
+    } catch {}
   }
 
   // Fallback: Local storage
@@ -158,7 +178,7 @@ export async function addWeightRecord(record: WeightRecord): Promise<{ success: 
     try {
       const res = await fetch(settings.scriptUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'text/plain' }, // Avoid CORS preflight with Apps Script
+        headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify({ action: 'addWeight', data: enrichedRecord }),
       });
       if (res.ok) {
@@ -180,7 +200,7 @@ export async function fetchMeasures(): Promise<FetchResponse<MeasureRecord[]>> {
 
   // Try 1: Cloudflare Pages Function
   try {
-    const res = await fetch('/api/measures');
+    const res = await fetch('/api/measures', { cache: 'no-store' });
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data)) {
@@ -196,7 +216,7 @@ export async function fetchMeasures(): Promise<FetchResponse<MeasureRecord[]>> {
   // Try 2: Direct Google Apps Script
   if (settings.scriptUrl) {
     try {
-      const res = await fetch(`${settings.scriptUrl}?action=getMeasures`);
+      const res = await fetch(`${settings.scriptUrl}?action=getMeasures`, { cache: 'no-store' });
       if (res.ok) {
         const json = await res.json();
         if (json.status === 'success' && Array.isArray(json.data)) {
@@ -307,7 +327,7 @@ Dados do usuário:
 Diretrizes:
 1. Responda de forma motivadora, empática, técnica e objetiva em Português do Brasil.
 2. Explique oscilações naturais (retenção hídrica pós-treino, glicogênio, sódio, intestino).
-3. Leve em conta a diferença entre usar trena metálica vs fita métrica maleável (ex: trena pode superestimar ou achatar tecidos dependendo da tensão).
+3. Leve em conta a diferença entre usar trena metálica vs fita métrica maleável.
 4. Destaque variações positivas e dê sugestões práticas de hidratação, sono e consistência.
 5. Use formatação markdown limpa (tópicos, negritos).`;
 
@@ -335,14 +355,14 @@ Diretrizes:
     }
   }
 
-  // Fallback assistant response with smart analysis when offline/no key configured yet
+  // Fallback assistant response
   const lastWeight = weights[weights.length - 1];
   const initialWeight = profile.pesoInicial;
   const diffTotal = lastWeight ? (lastWeight.peso - initialWeight).toFixed(3) : '0';
   const lastAbdomen = measures[measures.length - 1]?.abdomen || 127;
 
   return {
-    text: `### 📊 Análise Geral do Assistente (Modo de Demonstração / Offline)
+    text: `### 📊 Análise Geral do Assistente
 
 Olá! Aqui está o resumo das suas métricas atuais baseado no seu histórico registrado:
 
@@ -353,8 +373,7 @@ Olá! Aqui está o resumo das suas métricas atuais baseado no seu histórico re
 * **Última Medida Abdominal:** ${lastAbdomen} cm
 
 #### 💡 Observações Importantes:
-1. **Oscilações Pós-Treino:** A pesagem após treino reflete inflamação muscular temporária, hidratação e reposição de carboidratos/almoço. O padrão-ouro de comparação é a pesagem **em jejum pela manhã**, após urinar.
-2. **Método de Medição (Trena vs. Fita Métrica):** Foi registrado o uso de trena com expiração forçada (${lastAbdomen} cm). Recomenda-se adotar uma **fita métrica maleável de alfaiate** e medir em respiração normal e relaxada para melhor reprodutibilidade semanal.
-3. **Próximos Passos:** Mantenha os registros constantes. Para ativar análises personalizadas com inteligência artificial completa, certifique-se de configurar a \`GEMINI_API_KEY\` no Cloudflare Pages ou nas Configurações da página.`,
+1. **Oscilações Pós-Treino:** A pesagem após treino reflete inflamação muscular temporária e hidratação. O padrão-ouro de comparação é em jejum pela manhã.
+2. **Método de Medição:** Adote uma fita métrica maleável de alfaiate com respiração normal para melhor reprodutibilidade.`,
   };
 }

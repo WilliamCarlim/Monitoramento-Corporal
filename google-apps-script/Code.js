@@ -9,10 +9,7 @@ const SPREADSHEET_ID = '1VvS_1QHdbXDEDM1Zju4FcrWriLfeaZwuqBdp9HIMi-U';
 function doGet(e) {
   try {
     const action = (e && e.parameter && e.parameter.action) || 'getWeights';
-    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-
-    // Auto-organiza e alinha a planilha sempre que chamada
-    autoOrganizarPlanilha(ss);
+    const ss = SpreadsheetApp.getActiveSpreadsheet() || SpreadsheetApp.openById(SPREADSHEET_ID);
 
     if (action === 'getWeights') {
       const sheet = ss.getSheetByName('Registro de Peso');
@@ -43,22 +40,20 @@ function doPost(e) {
   try {
     const payload = JSON.parse(e.postData.contents);
     const action = payload.action;
-    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const ss = SpreadsheetApp.getActiveSpreadsheet() || SpreadsheetApp.openById(SPREADSHEET_ID);
 
     if (action === 'addWeight') {
       const sheet = ss.getSheetByName('Registro de Peso');
-      if (!sheet) return jsonResponse({ status: 'error', message: 'Aba não encontrada' });
+      if (!sheet) return jsonResponse({ status: 'error', message: 'Aba Registro de Peso não encontrada' });
       addWeightToSheet(sheet, payload.data);
-      autoOrganizarPlanilha(ss);
-      return jsonResponse({ status: 'success', message: 'Peso adicionado e organizado com sucesso' });
+      return jsonResponse({ status: 'success', message: 'Peso adicionado com sucesso' });
     }
 
     if (action === 'addMeasure') {
       const sheet = ss.getSheetByName('Medidas Corporais');
-      if (!sheet) return jsonResponse({ status: 'error', message: 'Aba não encontrada' });
+      if (!sheet) return jsonResponse({ status: 'error', message: 'Aba Medidas Corporais não encontrada' });
       addMeasureToSheet(sheet, payload.data);
-      autoOrganizarPlanilha(ss);
-      return jsonResponse({ status: 'success', message: 'Medidas adicionadas e organizadas com sucesso' });
+      return jsonResponse({ status: 'success', message: 'Medidas adicionadas com sucesso' });
     }
 
     return jsonResponse({ status: 'error', message: 'Ação não reconhecida: ' + action });
@@ -69,9 +64,13 @@ function doPost(e) {
 
 // ==========================================
 // AUTO-ORGANIZADOR E ALINHAMENTO DA PLANILHA
+// Pode ser executado diretamente no editor sem parâmetros!
 // ==========================================
 
 function autoOrganizarPlanilha(ss) {
+  if (!ss || typeof ss.getSheetByName !== 'function') {
+    ss = SpreadsheetApp.getActiveSpreadsheet() || SpreadsheetApp.openById(SPREADSHEET_ID);
+  }
   organizarAbaPeso(ss.getSheetByName('Registro de Peso'));
   organizarAbaMedidas(ss.getSheetByName('Medidas Corporais'));
 }
@@ -80,20 +79,17 @@ function organizarAbaPeso(sheet) {
   if (!sheet) return;
 
   const data = sheet.getDataRange().getValues();
-  let headerRow = 9; // Linha 9 é o cabeçalho oficial
-
-  // Coletar todos os registros válidos existentes (mesmo os deslocados na Coluna A ou na linha 26)
   const validRecords = [];
 
-  for (let r = headerRow; r < data.length; r++) {
+  // Começa a procurar da linha 10 (índice 9) até o final
+  for (let r = 9; r < data.length; r++) {
     const row = data[r];
 
-    // Verificar se há data na Coluna A (deslocada) ou Coluna B (correta)
-    let rawDate = row[1]; // Coluna B
+    // Verificar se há data na Coluna B (correta, índice 1) ou Coluna A (deslocada, índice 0)
+    let rawDate = row[1];
     let shifted = false;
 
     if (!rawDate && row[0]) {
-      // Estava deslocada para a Coluna A!
       rawDate = row[0];
       shifted = true;
     }
@@ -101,7 +97,7 @@ function organizarAbaPeso(sheet) {
     const formattedDate = formatDate(rawDate);
     if (!formattedDate || formattedDate.toLowerCase() === 'data') continue;
 
-    // Se estiver deslocada, os dados vieram em colunas -1
+    // Se estiver deslocada, os dados vieram 1 coluna para a esquerda
     let diaSemana = shifted ? String(row[1] || '') : String(row[2] || '');
     let contexto = shifted ? String(row[2] || '') : String(row[3] || '');
     let peso = shifted ? parseCleanNumber(row[4] || row[3]) : parseCleanNumber(row[4]);
@@ -124,7 +120,7 @@ function organizarAbaPeso(sheet) {
     }
   }
 
-  // Se não encontrou novos, preserva o baseline
+  // Se nenhum registro for encontrado, garante o registro inicial
   if (validRecords.length === 0) {
     validRecords.push({
       data: '16/11/2026',
@@ -138,16 +134,15 @@ function organizarAbaPeso(sheet) {
     });
   }
 
-  // Limpar a área de dados da tabela (da linha 10 à linha 35, colunas A até J)
-  const clearRange = sheet.getRange(10, 1, 26, 10);
-  clearRange.clearContent();
+  // Limpar a área de dados da tabela (linhas 10 a 35, colunas A a J)
+  sheet.getRange(10, 1, 26, 10).clearContent();
 
   const formatBR = (num, dec) => {
     if (num === undefined || num === null || isNaN(num)) return '0,000';
     return Number(num).toLocaleString('pt-BR', { minimumFractionDigits: dec, maximumFractionDigits: dec });
   };
 
-  // Reescrever organizadamente a partir da linha 10, Coluna B (índice 2)
+  // Reescrever a partir da linha 10, Coluna B (índice 2)
   for (let i = 0; i < validRecords.length; i++) {
     const rec = validRecords[i];
     const targetRow = 10 + i;
@@ -171,11 +166,9 @@ function organizarAbaMedidas(sheet) {
   if (!sheet) return;
 
   const data = sheet.getDataRange().getValues();
-  let headerRow = 5;
-
   const validRecords = [];
 
-  for (let r = headerRow; r < data.length; r++) {
+  for (let r = 5; r < data.length; r++) { // Linha 6 em diante
     const row = data[r];
     let rawDate = row[1]; // Coluna B
     let shifted = false;
@@ -188,11 +181,10 @@ function organizarAbaMedidas(sheet) {
     const formattedDate = formatDate(rawDate);
     if (!formattedDate || formattedDate.toLowerCase() === 'data') continue;
 
-    // Colunas de medidas
     const offset = shifted ? 0 : 1;
-    const abdomen = parseCleanNumber(row[offset + 5]); // Coluna G (index 6, offset 1 + 5 = 6)
-    const cintura = parseCleanNumber(row[offset + 4]);
-    const quadril = parseCleanNumber(row[offset + 6]);
+    const abdomen = parseCleanNumber(row[offset + 5]); // Coluna G
+    const cintura = parseCleanNumber(row[offset + 4]); // Coluna F
+    const quadril = parseCleanNumber(row[offset + 6]); // Coluna H
 
     if (abdomen > 0 || cintura > 0 || quadril > 0) {
       validRecords.push({
@@ -227,7 +219,6 @@ function organizarAbaMedidas(sheet) {
     });
   }
 
-  // Limpar da linha 6 à 25
   sheet.getRange(6, 1, 20, 18).clearContent();
 
   const formatVal = (v) => {
@@ -270,7 +261,7 @@ function parseWeightSheet(sheet) {
   const data = sheet.getDataRange().getValues();
   const records = [];
 
-  for (let r = 9; r < data.length; r++) { // Linha 10 (índice 9) em diante
+  for (let r = 9; r < data.length; r++) { // Linha 10 em diante
     const row = data[r];
     const formattedDate = formatDate(row[1]); // Coluna B
     if (!formattedDate) continue;
@@ -298,7 +289,7 @@ function parseMeasureSheet(sheet) {
   const data = sheet.getDataRange().getValues();
   const records = [];
 
-  for (let r = 5; r < data.length; r++) { // Linha 6 (índice 5) em diante
+  for (let r = 5; r < data.length; r++) { // Linha 6 em diante
     const row = data[r];
     const formattedDate = formatDate(row[1]); // Coluna B
     if (!formattedDate) continue;
@@ -338,7 +329,6 @@ function parseMeasureSheet(sheet) {
   return records;
 }
 
-// Inserção direta
 function addWeightToSheet(sheet, d) {
   const data = sheet.getDataRange().getValues();
   let targetRow = 10;

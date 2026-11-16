@@ -180,6 +180,7 @@ export const App: React.FC = () => {
         onClose={() => setIsSettingsOpen(false)}
         profile={profile}
         onUpdateProfile={(updated) => setProfile(updated)}
+        onResetCache={() => syncData(false)}
       />
     </div>
   );

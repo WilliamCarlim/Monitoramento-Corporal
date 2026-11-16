@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Key, Database, User, Check, ExternalLink, ShieldCheck } from 'lucide-react';
+import { X, Key, Database, User, Check, ExternalLink, ShieldCheck, Trash2 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { SPREADSHEET_ID } from '../services/api';
 import { getApiSettings, saveApiSettings, saveStoredProfile } from '../services/storage';
@@ -9,6 +9,7 @@ interface SettingsModalProps {
   onClose: () => void;
   profile: UserProfile;
   onUpdateProfile: (profile: UserProfile) => void;
+  onResetCache?: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -16,6 +17,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
   profile,
   onUpdateProfile,
+  onResetCache,
 }) => {
   const currentSettings = getApiSettings();
 
@@ -24,6 +26,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [scriptUrl, setScriptUrl] = useState<string>(currentSettings.scriptUrl || '');
   const [geminiKey, setGeminiKey] = useState<string>(currentSettings.geminiApiKey || '');
   const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
+  const [cacheCleared, setCacheCleared] = useState<boolean>(false);
 
   if (!isOpen) return null;
 
@@ -52,7 +55,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setTimeout(() => {
       setSavedSuccess(false);
       onClose();
+      if (onResetCache) onResetCache();
     }, 1000);
+  };
+
+  const handleClearCache = () => {
+    localStorage.removeItem('mc_weight_records_v1');
+    localStorage.removeItem('mc_measure_records_v1');
+    setCacheCleared(true);
+    setTimeout(() => {
+      setCacheCleared(false);
+      if (onResetCache) onResetCache();
+    }, 800);
   };
 
   return (
@@ -82,15 +96,40 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {savedSuccess && (
             <div className="p-3 bg-emerald-950/60 border border-emerald-500/50 rounded-xl flex items-center gap-2 text-emerald-300 text-sm">
               <Check className="w-4 h-4 text-emerald-400" />
-              Configurações salvas com sucesso!
+              Configurações salvas e aplicadas!
             </div>
           )}
 
+          {cacheCleared && (
+            <div className="p-3 bg-amber-950/60 border border-amber-500/50 rounded-xl flex items-center gap-2 text-amber-300 text-sm">
+              <Check className="w-4 h-4 text-amber-400" />
+              Registros locais limpos! Buscando da planilha...
+            </div>
+          )}
+
+          {/* Section: Apps Script Web App URL */}
+          <div className="space-y-2 p-3.5 bg-cyan-950/20 border border-cyan-500/30 rounded-xl">
+            <label className="text-xs font-bold uppercase tracking-wider text-cyan-300 flex items-center gap-2">
+              <ExternalLink className="w-4 h-4 text-cyan-400" />
+              URL do Google Apps Script (Web App)
+            </label>
+            <input
+              type="url"
+              value={scriptUrl}
+              onChange={(e) => setScriptUrl(e.target.value)}
+              placeholder="https://script.google.com/macros/s/AKfycb.../exec"
+              className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white text-xs placeholder-slate-500 font-mono focus:border-cyan-500 focus:outline-none"
+            />
+            <p className="text-[11px] text-slate-300">
+              Cole aqui a URL gerada em <strong>Implantar &gt; Gerenciar implantações</strong> no Google Sheets para conectar diretamente o seu navegador à planilha!
+            </p>
+          </div>
+
           {/* Section: Planilha Google Sheets */}
-          <div className="space-y-3">
+          <div className="space-y-2">
             <label className="text-xs font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
               <Database className="w-4 h-4 text-emerald-400" />
-              Planilha do Google Sheets Conectada
+              Planilha Oficial
             </label>
             <div className="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700 text-xs space-y-2">
               <div className="flex items-center justify-between">
@@ -149,12 +188,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
           {/* Section: Gemini API Key */}
           <div className="space-y-2 pt-1">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-                <Key className="w-4 h-4 text-purple-400" />
-                Chave da API do Gemini (GEMINI_API_KEY)
-              </label>
-            </div>
+            <label className="text-xs font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+              <Key className="w-4 h-4 text-purple-400" />
+              Chave da API do Gemini (GEMINI_API_KEY)
+            </label>
             <input
               type="password"
               value={geminiKey}
@@ -164,25 +201,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             />
             <p className="text-[11px] text-slate-400 flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-              Pode ser configurada como variável de ambiente <code className="text-purple-300">GEMINI_API_KEY</code> no Cloudflare Pages, ou inserida aqui para testes rápidos.
+              Para análises com inteligência artificial no site.
             </p>
           </div>
 
-          {/* Section: Apps Script Web App URL */}
-          <div className="space-y-2 pt-1">
-            <label className="text-xs font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-              <ExternalLink className="w-4 h-4 text-cyan-400" />
-              URL Web App do Google Apps Script (Opcional)
-            </label>
-            <input
-              type="url"
-              value={scriptUrl}
-              onChange={(e) => setScriptUrl(e.target.value)}
-              placeholder="https://script.google.com/macros/s/.../exec"
-              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white text-xs placeholder-slate-500 font-mono"
-            />
-            <p className="text-[11px] text-slate-400">
-              Caso use o script de ponte direta no Google Drive (código fornecido na pasta <code className="text-slate-300">google-apps-script/</code>).
+          {/* Clear Cache Button */}
+          <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={handleClearCache}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-rose-400 hover:text-rose-300 hover:bg-rose-950/30 border border-rose-500/20 transition cursor-pointer"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Limpar Registros Locais (Reset)
+            </button>
+            <p className="text-[10px] text-slate-400 max-w-[220px] text-right">
+              Apaga registros de teste do navegador e puxa a planilha limpa.
             </p>
           </div>
 

@@ -35,6 +35,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   }
 
   let promptInstruction = '';
+
   if (type === 'weight') {
     promptInstruction = `Você é um especialista em leitura OCR de fotos de balanças digitais e prints de aplicativos de bioimpedância (como Mi Fitness, Zepp Life, Renpho, Omron, Huawei Health, etc.).
 Analise a imagem e extraia os dados corporais com máxima precisão.
@@ -61,26 +62,44 @@ Campos a extrair (se não encontrar algum, use null):
   "melhorPeso30d": number (ex: 107.85),
   "observacoes": string
 }`;
-  } else if (type === 'workout') {
-    promptInstruction = `Você é um especialista em leitura OCR de prints de treinos esportivos (Strava, Garmin, Nike Run, Apple Fitness, etc.).
-Analise o print do treino e extraia as métricas esportivas com precisão.
-Retorne EXCLUSIVAMENTE um objeto JSON válido, sem crases e sem comentários adicionais.
-Campos a extrair:
+  } else if (type === 'cardio') {
+    promptInstruction = `Você é um especialista em leitura OCR de prints de atividades aeróbicas e cardio (Strava, Garmin, Apple Fitness, relógios esportivos, etc.) para Caminhada, Corrida, Ciclismo / Bike e Esteira.
+Analise a imagem e extraia as métricas esportivas com precisão:
+- Identifique a modalidade: "Caminhada", "Corrida", "Ciclismo / Bike" ou "Esteira".
+- Extraia distância (km), tempo de movimento (formato HH:MM:SS ou MM:SS), passos (quando houver; se for bike ou não houver passos, use null), elevação (m) e calorias se estiver explícito no print.
+- Se for atividade de bicicleta/ciclismo ou contiver métricas extras (velocidade média, velocidade máxima, elevação máxima, parceiros/acompanhantes), registre essas informações detalhadamente no campo "observacoes".
+Retorne EXCLUSIVAMENTE um objeto JSON válido, sem crases de código markdown:
 {
-  "modalidade": string (ex: "Caminhada", "Corrida", "Ciclismo", "Musculação"),
+  "modalidade": string ("Caminhada" | "Corrida" | "Ciclismo / Bike" | "Esteira"),
   "data": string (formato DD/MM/AAAA se visível),
   "horario": string (ex: "Entardecer 18:12" ou "18:12"),
-  "local": string (ex: "Strava • Bariri, SP" ou o título/local do treino no Strava),
-  "distanciaKm": number (ex: 5.70),
-  "tempoMovimento": string (formato HH:MM:SS ou MM:SS, ex: "00:58:43"),
-  "passos": number (ex: 6944),
-  "elevacaoM": number (ex: 51),
-  "calorias": number (ex: 470),
+  "local": string (ex: "Strava • Bariri, SP"),
+  "distanciaKm": number,
+  "tempoMovimento": string (HH:MM:SS),
+  "passos": number ou null,
+  "elevacaoM": number ou null,
+  "calorias": number ou null,
   "observacoes": string
+}`;
+  } else if (type === 'workout') {
+    promptInstruction = `Você é um especialista em leitura OCR de prints de treinos de musculação e academia finalizados (como aplicativos de academia, treinos salvos, etc.).
+Analise a imagem do treino e faça:
+1. "focoDivisao": Identifique e preencha APENAS os grupos musculares principais treinados (ex: "Peitoral / Tríceps", "Costas / Bíceps", "Pernas / Quadríceps", "Ombros / Trapézio"). NUNCA coloque nomes de rotina/ficha neste campo (ex: se tiver "Ficha: Abcde w hipertrofia...", NÃO coloque aqui, coloque nas observações).
+2. "exerciciosCargas": Formate uma lista textual limpa de todos os exercícios identificados, suas séries e cargas/aparelhos (ex: "Supino reto com barra - 3 séries (30kg máquina); Supino inclinado com halteres - 3 séries (15 cada lado máquina); Peck deck - 3 séries (50); Crucifixo na polia - 3 séries (7.5); Tríceps francês - 3 séries; Tríceps corda - 3 séries (17.5); Tríceps testa com halteres - 3 séries").
+3. "observacoes": Coloque o total de exercícios executados, o nome da academia ou local, e o nome da ficha/rotina (ex: "7 exercícios executados • Fast fit • Ficha: Abcde w hipertrofi...").
+4. "data": se visível no print (DD/MM/AAAA).
+5. "contexto": ex: "Academia Fast fit".
+Retorne EXCLUSIVAMENTE um objeto JSON válido, sem crases de código markdown:
+{
+  "focoDivisao": string (apenas grupos musculares),
+  "exerciciosCargas": string,
+  "observacoes": string,
+  "data": string ou null,
+  "contexto": string ou null
 }`;
   } else {
     promptInstruction = `Você é um especialista em leitura OCR de anotações e tabelas de medidas corporais (circunferências em cm).
-Analise a imagem e extraia os valores em cm.
+Analise a imagem e extraia os valores em cm com precisão.
 Retorne EXCLUSIVAMENTE um objeto JSON válido, sem crases:
 {
   "data": string (DD/MM/AAAA se visível),
@@ -122,7 +141,7 @@ Retorne EXCLUSIVAMENTE um objeto JSON válido, sem crases:
       ],
       generationConfig: {
         temperature: 0.2,
-        maxOutputTokens: 1024,
+        maxOutputTokens: 1500,
       },
     };
 

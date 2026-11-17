@@ -3,11 +3,12 @@
  * Planilha: Acompanhamento Corporal - Peso e Medidas 2026
  * ID: 1VvS_1QHdbXDEDM1Zju4FcrWriLfeaZwuqBdp9HIMi-U
  *
- * Gerencia e alinha perfeitamente as 4 abas oficiais:
+ * Gerencia as 5 abas oficiais da planilha:
  * 1. "Registro de Peso" (8 cards superiores de bioimpedância + Linha 9 cabeçalho + Linha 10+ dados)
  * 2. "Medidas Corporais" (Linha 5 cabeçalho + Linha 6+ dados)
- * 3. "Treinos" (Linhas 5-7 cards de resumo Strava + Linha 9 cabeçalho + Linha 10+ dados)
- * 4. "Fotos" (Linha 5 cabeçalho + Linha 6+ dados + Google Drive)
+ * 3. "Cardio" (Linhas 5-7 cards aeróbicos + Linha 9 cabeçalho + Linha 10+ dados)
+ * 4. "Treinos" (Linhas 5-7 cards de musculação + Linha 9 cabeçalho + Linha 10+ dados)
+ * 5. "Fotos" (Linha 5 cabeçalho + Linha 6+ dados + Google Drive)
  */
 
 const SPREADSHEET_ID = '1VvS_1QHdbXDEDM1Zju4FcrWriLfeaZwuqBdp9HIMi-U';
@@ -15,28 +16,30 @@ const DRIVE_FOLDER_NAME = 'Acompanhamento Corporal - Fotos';
 
 // ==========================================
 // FUNÇÃO EXECUTÁVEL MANUALMENTE NO APPS SCRIPT
-// (Desduplica linhas, corrige cards e alinha tudo)
+// (Desduplica linhas, cria/alinha as 5 abas e fórmulas)
 // ==========================================
 
 function autoOrganizarPlanilha() {
   const ss = SpreadsheetApp.getActiveSpreadsheet() || SpreadsheetApp.openById(SPREADSHEET_ID);
   setupEOrganizarTudo(ss);
-  Logger.log('Todas as 4 abas e fórmulas foram alinhadas e desduplicadas com sucesso!');
+  Logger.log('Todas as 5 abas e fórmulas foram alinhadas e organizadas com sucesso!');
 }
 
 function setupEOrganizarTudo(ss) {
   if (!ss || typeof ss.getSheetByName !== 'function') {
     ss = SpreadsheetApp.getActiveSpreadsheet() || SpreadsheetApp.openById(SPREADSHEET_ID);
   }
-  organizarAbaFotos(ss);
-  organizarAbaTreinos(ss);
   organizarAbaPeso(ss);
   organizarAbaMedidas(ss);
+  organizarAbaCardio(ss);
+  organizarAbaTreinos(ss);
+  organizarAbaFotos(ss);
 }
 
 // Aliases para compatibilidade total
 function criarAbaRegistroPeso(ss) { return organizarAbaPeso(ss); }
 function criarAbaMedidas(ss) { return organizarAbaMedidas(ss); }
+function criarAbaCardio(ss) { return organizarAbaCardio(ss); }
 function criarAbaTreinos(ss) { return organizarAbaTreinos(ss); }
 function criarAbaFotos(ss) { return organizarAbaFotos(ss); }
 
@@ -73,13 +76,13 @@ function organizarAbaPeso(ss) {
       '16/11/2026', 'segunda-feira', 'Horário do almoço, após a academia / 12:21', '113,250',
       '0,000', '0,000', '34,95', '35,6', '40,3', '32,3', '36,5', '61,8', '70,0',
       '48,5', '54,9', '26,5', '2.146,0', '36,6', '176', '33', '107,85',
-      'Primeiro registro de pesagem (início do plano)'
+      'Primeiro registro de pesagem (início do plano) • App 16/11 12:21 (vs 20/10 +5,40 kg)'
     ];
     const row2 = [
       '17/11/2026', 'terça-feira', 'Manhã 06:41', '111,750',
       '-1,500', '-1,500', '34,49', '35,2', '39,4', '32,5', '36,3', '62,1', '69,5',
       '48,6', '54,4', '26,0', '2.126,0', '36,1', '176', '33', '107,85',
-      'Aferição matinal em jejum'
+      'Pesagem matinal (Gordura corporal: 35,2%)'
     ];
     sheet.getRange(10, 2, 1, row1.length).setValues([row1]);
     sheet.getRange(11, 2, 1, row2.length).setValues([row2]);
@@ -152,7 +155,7 @@ function organizarAbaMedidas(ss) {
   if (!val6 || String(val6).toLowerCase().includes('data')) {
     const row = [
       '16/11/2026', '', '', '', '', '127,0', '', '', '', '', '', '', '', '', '',
-      'medição preliminar com trena na altura do umbigo, soltando o ar até ficar sem fôlego; aguardando fita métrica'
+      'Medição preliminar com trena na altura do umbigo, soltando o ar até ficar sem fôlego (aguardando fita métrica para medida oficial)'
     ];
     sheet.getRange(6, 2, 1, row.length).setValues([row]);
   }
@@ -160,63 +163,68 @@ function organizarAbaMedidas(ss) {
 }
 
 // ==========================================
-// 3. ABA TREINOS
+// 3. ABA CARDIO (Aeróbico: Caminhada, Corrida, Ciclismo, Esteira)
 // ==========================================
 
-function organizarAbaTreinos(ss) {
-  let sheet = ss.getSheetByName('Treinos');
+function organizarAbaCardio(ss) {
+  let sheet = ss.getSheetByName('Cardio');
   if (!sheet) {
-    sheet = ss.insertSheet('Treinos');
+    sheet = ss.insertSheet('Cardio');
   }
 
-  // 1. Limpa a Linha 4 (onde vazou o texto duplicado dos cards)
+  // 1. Limpa a Linha 4 e Linha 8
   sheet.getRange('B4:Z4').clearContent();
-
-  // 2. Limpa a Linha 8 (onde duplicou o cabeçalho da tabela)
   sheet.getRange('B8:Z8').clearContent().clearFormat();
 
-  // 3. Cabeçalho oficial único na Linha 9
+  // 2. Cabeçalho oficial na Linha 9
   const header = [
     'Data', 'Dia da Semana', 'Horário / Contexto', 'Modalidade', 'Local / Origem',
     'Distância (km)', 'Tempo de Movimentação', 'Passos', 'Elevação (m)',
     'Gasto Calórico Estimado (kcal)', 'Observações'
   ];
   sheet.getRange(9, 2, 1, header.length).setValues([header]);
-  sheet.getRange(9, 2, 1, header.length).setFontWeight('bold').setBackground('#0369a1').setFontColor('#ffffff');
+  sheet.getRange(9, 2, 1, header.length).setFontWeight('bold').setBackground('#0284c7').setFontColor('#ffffff');
 
-  // 4. Garante que o treino inicial esteja na Linha 10 se estiver vazio
+  // 3. Registro inicial na Linha 10
   const val10 = sheet.getRange(10, 2).getValue();
   if (!val10 || String(val10).toLowerCase().includes('data')) {
     const row = [
-      '16/11/2026', 'segunda-feira', 'Entardecer (18:12)', 'Caminhada', 'Strava • Bariri, SP',
-      '5,70', '00:58:43', '6.944', '51', '470', 'Caminhada ao entardecer registrada no Strava (ritmo médio 10:18 min/km)'
+      '16/11/2026', 'segunda-feira', 'Entardecer 18:12', 'Caminhada', 'Strava • Bariri, SP',
+      '5,70', '00:58:43', '6.944', '51', '470',
+      'Caminhada ao entardecer registrada no Strava (ritmo médio ~10,3 min/km)'
     ];
     sheet.getRange(10, 2, 1, row.length).setValues([row]);
   }
 
-  // 5. Atualiza os cards superiores (Linhas 5-7) nos blocos corretos
-  atualizarCardsTreinos(sheet);
+  // Validação suspensa para Modalidades na coluna E (coluna 5, que é B=2, C=3, D=4, E=5)
+  try {
+    const rule = SpreadsheetApp.newDataValidation()
+      .requireValueInList(['Caminhada', 'Corrida', 'Ciclismo / Bike', 'Esteira'], true)
+      .setAllowInvalid(false)
+      .build();
+    sheet.getRange('E10:E100').setDataValidation(rule);
+  } catch (e) {}
 
+  atualizarCardsCardio(sheet);
   return sheet;
 }
 
-function atualizarCardsTreinos(sheet) {
-  // Limpa Linha 4 e Linha 8 para garantir
+function atualizarCardsCardio(sheet) {
   sheet.getRange('B4:Z4').clearContent();
   sheet.getRange('B8:Z8').clearContent().clearFormat();
 
-  const workouts = parseWorkoutSheet(sheet);
+  const cardios = parseCardioSheet(sheet);
   let totalKm = 0;
   let totalPassos = 0;
   let totalKcal = 0;
   let totalSeconds = 0;
 
-  workouts.forEach(w => {
-    totalKm += w.distanciaKm || 0;
-    totalPassos += w.passos || 0;
-    totalKcal += w.calorias || 0;
-    if (w.tempoMovimento) {
-      const parts = w.tempoMovimento.split(':').map(Number);
+  cardios.forEach(c => {
+    totalKm += c.distanciaKm || 0;
+    totalPassos += c.passos || 0;
+    totalKcal += c.calorias || 0;
+    if (c.tempoMovimento) {
+      const parts = c.tempoMovimento.split(':').map(Number);
       if (parts.length === 3) totalSeconds += parts[0] * 3600 + parts[1] * 60 + parts[2];
       else if (parts.length === 2) totalSeconds += parts[0] * 60 + parts[1];
     }
@@ -226,24 +234,24 @@ function atualizarCardsTreinos(sheet) {
   const m = Math.floor((totalSeconds % 3600) / 60);
   const s = totalSeconds % 60;
   const timeFormatted = totalSeconds > 0
-    ? `${String(h).padStart(1, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
-    : '0:58:43';
+    ? `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+    : '00:58:43';
 
-  // Configura títulos nos cards (Linha 5)
+  // Títulos na Linha 5
   sheet.getRange(5, 2).setValue('TOTAL DE ATIVIDADES').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
   sheet.getRange(5, 4).setValue('DISTÂNCIA TOTAL').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
   sheet.getRange(5, 6).setValue('TEMPO TOTAL').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
   sheet.getRange(5, 8).setValue('PASSOS TOTAIS').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
   sheet.getRange(5, 10).setValue('CALORIAS ESTIMADAS').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
 
-  // Valores nos cards (Linha 6)
-  sheet.getRange(6, 2).setValue(`${workouts.length} atividade(s)`).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
+  // Valores na Linha 6
+  sheet.getRange(6, 2).setValue(`${cardios.length} atividade(s)`).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
   sheet.getRange(6, 4).setValue(`${totalKm.toFixed(2).replace('.', ',')} km`).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
   sheet.getRange(6, 6).setValue(timeFormatted).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
   sheet.getRange(6, 8).setValue(`${totalPassos.toLocaleString('pt-BR')} passos`).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
   sheet.getRange(6, 10).setValue(`${totalKcal.toLocaleString('pt-BR')} kcal`).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
 
-  // Subtítulos nos cards (Linha 7)
+  // Subtítulos na Linha 7
   sheet.getRange(7, 2).setValue('Sessões registradas').setFontSize(8).setFontColor('#64748b');
   sheet.getRange(7, 4).setValue('Quilômetros percorridos').setFontSize(8).setFontColor('#64748b');
   sheet.getRange(7, 6).setValue('Tempo em movimento').setFontSize(8).setFontColor('#64748b');
@@ -252,7 +260,80 @@ function atualizarCardsTreinos(sheet) {
 }
 
 // ==========================================
-// 4. ABA FOTOS
+// 4. ABA TREINOS (Musculação / Academia)
+// ==========================================
+
+function organizarAbaTreinos(ss) {
+  let sheet = ss.getSheetByName('Treinos');
+  if (!sheet) {
+    sheet = ss.insertSheet('Treinos');
+  }
+
+  // 1. Limpa Linha 4 e Linha 8
+  sheet.getRange('B4:Z4').clearContent();
+  sheet.getRange('B8:Z8').clearContent().clearFormat();
+
+  // 2. Cabeçalho oficial na Linha 9
+  const header = [
+    'Data', 'Dia da Semana', 'Horário / Contexto', 'Foco / Divisão Muscular',
+    'Duração (min)', 'Exercícios / Observações de Carga', 'Esforço (PSE)', 'Observações'
+  ];
+  sheet.getRange(9, 2, 1, header.length).setValues([header]);
+  sheet.getRange(9, 2, 1, header.length).setFontWeight('bold').setBackground('#7c3aed').setFontColor('#ffffff');
+
+  // 3. Registro inicial na Linha 10 (16/11/2026 - Fast fit Peitoral/Tríceps)
+  const val10 = sheet.getRange(10, 2).getValue();
+  if (!val10 || String(val10).toLowerCase().includes('data')) {
+    const row = [
+      '16/11/2026', 'segunda-feira', 'Academia Fast fit', 'Peitoral / Tríceps',
+      '60',
+      'Supino reto com barra - 3 séries (30kg máquina); Supino inclinado com halteres - 3 séries (15 cada lado máquina); Peck deck - 3 séries (50); Crucifixo na polia - 3 séries (7.5); Tríceps francês - 3 séries; Tríceps corda - 3 séries (17.5); Tríceps testa com halteres - 3 séries',
+      '8',
+      '7 exercícios executados • Fast fit • Ficha: Abcde w hipertrofi...'
+    ];
+    sheet.getRange(10, 2, 1, row.length).setValues([row]);
+  }
+
+  atualizarCardsTreinos(sheet);
+  return sheet;
+}
+
+function atualizarCardsTreinos(sheet) {
+  sheet.getRange('B4:Z4').clearContent();
+  sheet.getRange('B8:Z8').clearContent().clearFormat();
+
+  const workouts = parseWorkoutSheet(sheet);
+  let totalMinutos = 0;
+  const diasSet = new Set();
+  let ultimoFoco = 'Peitoral / Tríceps';
+
+  workouts.forEach(w => {
+    if (w.data) diasSet.add(w.data);
+    totalMinutos += w.duracaoMin || 0;
+    if (w.focoDivisao) ultimoFoco = w.focoDivisao;
+  });
+
+  // Títulos na Linha 5
+  sheet.getRange(5, 2).setValue('TOTAL DE TREINOS').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
+  sheet.getRange(5, 4).setValue('TEMPO TOTAL ACADEMIA').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
+  sheet.getRange(5, 6).setValue('FREQUÊNCIA (DIAS)').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
+  sheet.getRange(5, 8).setValue('ÚLTIMO FOCO MUSCULAR').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
+
+  // Valores na Linha 6
+  sheet.getRange(6, 2).setValue(`${workouts.length} treino(s)`).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
+  sheet.getRange(6, 4).setValue(`${totalMinutos} min`).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
+  sheet.getRange(6, 6).setValue(`${diasSet.size} dia(s)`).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
+  sheet.getRange(6, 8).setValue(ultimoFoco).setFontWeight('bold').setFontSize(14).setFontColor('#7c3aed');
+
+  // Subtítulos na Linha 7
+  sheet.getRange(7, 2).setValue('Sessões de musculação').setFontSize(8).setFontColor('#64748b');
+  sheet.getRange(7, 4).setValue('Duração acumulada').setFontSize(8).setFontColor('#64748b');
+  sheet.getRange(7, 6).setValue('Dias ativos na semana').setFontSize(8).setFontColor('#64748b');
+  sheet.getRange(7, 8).setValue('Grupos musculares').setFontSize(8).setFontColor('#64748b');
+}
+
+// ==========================================
+// 5. ABA FOTOS
 // ==========================================
 
 function organizarAbaFotos(ss) {
@@ -261,10 +342,10 @@ function organizarAbaFotos(ss) {
     sheet = ss.insertSheet('Fotos');
   }
 
-  // 1. Limpa a Linha 4 inteira (onde estava o cabeçalho roxo duplicado)
+  // 1. Limpa a Linha 4 inteira
   sheet.getRange('B4:Z4').clearContent().clearFormat();
 
-  // 2. Cabeçalho único e oficial na Linha 5 (estilo teal padrão da planilha)
+  // 2. Cabeçalho único na Linha 5
   const header = ['Semana', 'Data', 'Foto Frente (Link Drive)', 'Foto Lado (Link Drive)', 'Foto Costa (Link Drive)', 'Observações'];
   sheet.getRange(5, 2, 1, header.length).setValues([header]);
   sheet.getRange(5, 2, 1, header.length).setFontWeight('bold').setBackground('#134e4a').setFontColor('#ffffff');
@@ -368,6 +449,34 @@ function parseMeasureSheet(sheet) {
   return records;
 }
 
+function parseCardioSheet(sheet) {
+  const data = sheet.getDataRange().getValues();
+  const records = [];
+
+  for (let r = 9; r < data.length; r++) { // Linha 10 (índice 9) em diante
+    const row = data[r];
+    const dataStr = formatDate(row[1]);
+    if (!dataStr || String(row[1]).toLowerCase().includes('data')) continue;
+
+    records.push({
+      id: 'c-sheet-' + (r + 1),
+      data: dataStr,
+      diaSemana: String(row[2] || ''),
+      contexto: String(row[3] || ''),
+      modalidade: String(row[4] || 'Caminhada'),
+      local: String(row[5] || ''),
+      distanciaKm: parseCleanNumber(row[6]),
+      tempoMovimento: formatDurationTime(row[7]),
+      passos: parseCleanNumber(row[8]),
+      elevacaoM: parseCleanNumber(row[9]),
+      calorias: parseCleanNumber(row[10]),
+      observacoes: String(row[11] || '')
+    });
+  }
+
+  return records;
+}
+
 function parseWorkoutSheet(sheet) {
   const data = sheet.getDataRange().getValues();
   const records = [];
@@ -382,14 +491,11 @@ function parseWorkoutSheet(sheet) {
       data: dataStr,
       diaSemana: String(row[2] || ''),
       contexto: String(row[3] || ''),
-      modalidade: String(row[4] || 'Caminhada'),
-      local: String(row[5] || ''),
-      distanciaKm: parseCleanNumber(row[6]),
-      tempoMovimento: formatDurationTime(row[7]),
-      passos: parseCleanNumber(row[8]),
-      elevacaoM: parseCleanNumber(row[9]),
-      calorias: parseCleanNumber(row[10]),
-      observacoes: String(row[11] || '')
+      focoDivisao: String(row[4] || 'Musculação'),
+      duracaoMin: parseCleanNumber(row[5]) || undefined,
+      exerciciosCargas: String(row[6] || ''),
+      esforcoPse: parseCleanNumber(row[7]) || undefined,
+      observacoes: String(row[8] || '')
     });
   }
 
@@ -511,7 +617,7 @@ function addMeasureToSheet(sheet, d) {
   sheet.getRange(targetRow, 2, 1, rowValues.length).setValues([rowValues]);
 }
 
-function addWorkoutToSheet(sheet, d) {
+function addCardioToSheet(sheet, d) {
   const data = sheet.getDataRange().getValues();
   let targetRow = 10;
 
@@ -541,6 +647,34 @@ function addWorkoutToSheet(sheet, d) {
     d.passos ? String(d.passos) : '',
     d.elevacaoM ? String(d.elevacaoM) : '',
     d.calorias ? String(d.calorias) : '',
+    d.observacoes || ''
+  ];
+
+  sheet.getRange(targetRow, 2, 1, rowValues.length).setValues([rowValues]);
+}
+
+function addWorkoutToSheet(sheet, d) {
+  const data = sheet.getDataRange().getValues();
+  let targetRow = 10;
+
+  for (let r = 9; r < data.length; r++) {
+    if (!data[r][1] || String(data[r][1]).trim() === '') {
+      targetRow = r + 1;
+      break;
+    }
+    if (r === data.length - 1) {
+      targetRow = data.length + 1;
+    }
+  }
+
+  const rowValues = [
+    d.data,
+    d.diaSemana || '',
+    d.contexto || '',
+    d.focoDivisao || '',
+    d.duracaoMin ? String(d.duracaoMin) : '',
+    d.exerciciosCargas || '',
+    d.esforcoPse ? String(d.esforcoPse) : '',
     d.observacoes || ''
   ];
 
@@ -638,6 +772,12 @@ function doGet(e) {
       return jsonResponse({ status: 'success', data: parseMeasureSheet(sheet) });
     }
 
+    if (action === 'getCardios') {
+      const sheet = ss.getSheetByName('Cardio') || ss.getSheetByName('Treinos');
+      if (!sheet) return jsonResponse({ status: 'error', message: 'Aba Cardio não encontrada' });
+      return jsonResponse({ status: 'success', data: parseCardioSheet(sheet) });
+    }
+
     if (action === 'getWorkouts') {
       const sheet = ss.getSheetByName('Treinos');
       if (!sheet) return jsonResponse({ status: 'error', message: 'Aba Treinos não encontrada' });
@@ -652,7 +792,7 @@ function doGet(e) {
 
     if (action === 'organizar' || action === 'setup') {
       setupEOrganizarTudo(ss);
-      return jsonResponse({ status: 'success', message: 'Todas as 4 abas organizadas e desduplicadas!' });
+      return jsonResponse({ status: 'success', message: 'Todas as 5 abas organizadas e desduplicadas com sucesso!' });
     }
 
     return jsonResponse({ status: 'error', message: 'Ação desconhecida: ' + action });
@@ -680,11 +820,18 @@ function doPost(e) {
       return jsonResponse({ status: 'success', message: 'Medidas corporais salvas com sucesso' });
     }
 
+    if (action === 'addCardio') {
+      const sheet = ss.getSheetByName('Cardio') || organizarAbaCardio(ss);
+      addCardioToSheet(sheet, payload.data);
+      atualizarCardsCardio(sheet);
+      return jsonResponse({ status: 'success', message: 'Atividade de cardio registrada com sucesso' });
+    }
+
     if (action === 'addWorkout') {
       const sheet = ss.getSheetByName('Treinos') || organizarAbaTreinos(ss);
       addWorkoutToSheet(sheet, payload.data);
       atualizarCardsTreinos(sheet);
-      return jsonResponse({ status: 'success', message: 'Treino registrado com sucesso' });
+      return jsonResponse({ status: 'success', message: 'Treino de musculação registrado com sucesso' });
     }
 
     if (action === 'addPhoto' || action === 'uploadWeeklyPhotos') {
@@ -702,14 +849,6 @@ function doPost(e) {
 // ==========================================
 // UTILITÁRIOS
 // ==========================================
-
-function parseCleanNumber(val) {
-  if (val === undefined || val === null || val === '') return 0;
-  if (typeof val === 'number') return isNaN(val) ? 0 : val;
-  const clean = String(val).replace(/\s+/g, '').replace('kg', '').replace('cm', '').replace('%', '').replace(/\./g, '').replace(',', '.');
-  const parsed = parseFloat(clean);
-  return isNaN(parsed) ? 0 : parsed;
-}
 
 function formatDurationTime(val) {
   if (!val) return '00:00:00';
@@ -729,6 +868,14 @@ function formatDurationTime(val) {
     return `00:${match2[1].padStart(2, '0')}:${match2[2]}`;
   }
   return str;
+}
+
+function parseCleanNumber(val) {
+  if (val === undefined || val === null || val === '') return 0;
+  if (typeof val === 'number') return isNaN(val) ? 0 : val;
+  const clean = String(val).replace(/\s+/g, '').replace('kg', '').replace('cm', '').replace('%', '').replace(/\./g, '').replace(',', '.');
+  const parsed = parseFloat(clean);
+  return isNaN(parsed) ? 0 : parsed;
 }
 
 function formatDate(val) {

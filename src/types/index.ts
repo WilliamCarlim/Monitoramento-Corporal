@@ -1,7 +1,7 @@
 export interface WeightRecord {
   id?: string;
   data: string; // DD/MM/AAAA
-  diaSemana: string; // Segunda-feira, etc.
+  diaSemana: string; // segunda-feira, etc.
   contexto: string; // Horário do almoço, após a academia / 12:21, Manhã 06:41, etc.
   peso: number; // ex: 111.750
   variacaoAnterior?: number; // em kg
@@ -44,19 +44,31 @@ export interface MeasureRecord {
   observacoes?: string;
 }
 
-export interface WorkoutRecord {
+export interface CardioRecord {
   id?: string;
   data: string; // DD/MM/AAAA
-  diaSemana: string; // Segunda-feira, etc.
+  diaSemana: string; // segunda-feira, etc.
   contexto: string; // Entardecer 18:12, etc.
-  modalidade: string; // Caminhada, Corrida, Musculação, Ciclismo, etc.
+  modalidade: string; // Caminhada, Corrida, Ciclismo / Bike, Esteira
   local: string; // Strava • Bariri, SP, etc.
   distanciaKm?: number; // 5.70
   tempoMovimento: string; // 00:58:43
-  passos?: number; // 6944
+  passos?: number; // 6944 (opcional, especialmente para bike)
   elevacaoM?: number; // 51
   calorias?: number; // 470
   observacoes?: string;
+}
+
+export interface WorkoutRecord {
+  id?: string;
+  data: string; // DD/MM/AAAA
+  diaSemana: string; // segunda-feira, etc.
+  contexto: string; // Horário / Contexto (ex: Academia Fast fit)
+  focoDivisao: string; // Peitoral / Tríceps (somente grupos musculares)
+  duracaoMin?: number; // Duração em minutos (opcional/manual)
+  exerciciosCargas: string; // Exercícios / Observações de Carga
+  esforcoPse?: number; // Percepção Subjetiva de Esforço 1 a 10 (opcional)
+  observacoes?: string; // Ficha/rotina, número de exercícios, etc.
 }
 
 export interface PhotoRecord {

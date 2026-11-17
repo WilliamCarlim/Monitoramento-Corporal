@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Ruler, Calendar, FileText, CheckCircle2, AlertCircle, Sparkles, Camera, Upload, Loader2 } from 'lucide-react';
+import { Ruler, Calendar, FileText, CheckCircle2, AlertCircle, Sparkles, Camera, Upload, Loader2, X, Check } from 'lucide-react';
 import { MeasureRecord } from '../types';
 import { getTodayBR, parseBRNumber } from '../utils/formatters';
 import { extractFromPrint } from '../services/api';
@@ -40,6 +40,7 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({ onSubmit, onSuccess })
   const [loading, setLoading] = useState<boolean>(false);
   const [ocrLoading, setOcrLoading] = useState<boolean>(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -99,7 +100,7 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({ onSubmit, onSuccess })
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     const pAbdomen = parseBRNumber(abdomen);
@@ -130,6 +131,25 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({ onSubmit, onSuccess })
       });
       return;
     }
+
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmSave = async () => {
+    const pAbdomen = parseBRNumber(abdomen);
+    const pCintura = parseBRNumber(cintura);
+    const pQuadril = parseBRNumber(quadril);
+    const pTorax = parseBRNumber(torax);
+    const pPescoco = parseBRNumber(pescoco);
+    const pOmbro = parseBRNumber(ombro);
+    const pBracoDir = parseBRNumber(bracoDir);
+    const pBracoEsq = parseBRNumber(bracoEsq);
+    const pAntebracoDir = parseBRNumber(antebracoDir);
+    const pAntebracoEsq = parseBRNumber(antebracoEsq);
+    const pCoxaDir = parseBRNumber(coxaDir);
+    const pCoxaEsq = parseBRNumber(coxaEsq);
+    const pPanturrilhaDir = parseBRNumber(panturrilhaDir);
+    const pPanturrilhaEsq = parseBRNumber(panturrilhaEsq);
 
     setLoading(true);
     setFeedback(null);
@@ -162,6 +182,7 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({ onSubmit, onSuccess })
       const result = await onSubmit(record);
 
       if (result.success) {
+        setShowConfirmModal(false);
         setFeedback({
           type: 'success',
           message: `Medidas registradas com sucesso na aba Medidas Corporais!`,
@@ -451,6 +472,137 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({ onSubmit, onSuccess })
           )}
         </button>
       </form>
+
+      {/* Modal de Revisão e Confirmação */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-slate-850 border border-cyan-500/40 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-in fade-in duration-200">
+            <div className="flex items-center justify-between border-b border-slate-700 pb-3">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-cyan-400" />
+                Confirmar Lançamento de Medidas
+              </h3>
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="text-slate-400 hover:text-white transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-400">
+              Revise as medidas corporais antes de gravar na aba <strong>"Medidas Corporais"</strong> da planilha Google Sheets:
+            </p>
+
+            <div className="bg-slate-900 rounded-xl p-4 space-y-2.5 text-xs text-slate-300 border border-slate-800">
+              <div className="flex justify-between items-center pb-2 border-b border-slate-800">
+                <span className="text-slate-400">Data de Medição:</span>
+                <span className="font-semibold text-white">{data}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                {abdomen && (
+                  <div>
+                    <span className="text-cyan-400 font-semibold">Abdômen:</span> <span className="font-bold text-white">{abdomen} cm</span>
+                  </div>
+                )}
+                {cintura && (
+                  <div>
+                    <span className="text-cyan-400 font-semibold">Cintura:</span> <span className="font-bold text-white">{cintura} cm</span>
+                  </div>
+                )}
+                {quadril && (
+                  <div>
+                    <span className="text-cyan-400 font-semibold">Quadril:</span> <span className="font-bold text-white">{quadril} cm</span>
+                  </div>
+                )}
+                {torax && (
+                  <div>
+                    <span className="text-cyan-400 font-semibold">Tórax:</span> <span className="font-bold text-white">{torax} cm</span>
+                  </div>
+                )}
+                {pescoco && (
+                  <div>
+                    <span className="text-cyan-400 font-semibold">Pescoço:</span> <span className="font-bold text-white">{pescoco} cm</span>
+                  </div>
+                )}
+                {ombro && (
+                  <div>
+                    <span className="text-cyan-400 font-semibold">Ombro:</span> <span className="font-bold text-white">{ombro} cm</span>
+                  </div>
+                )}
+                {bracoDir && (
+                  <div>
+                    <span className="text-cyan-400 font-semibold">Braço Dir:</span> <span className="font-bold text-white">{bracoDir} cm</span>
+                  </div>
+                )}
+                {bracoEsq && (
+                  <div>
+                    <span className="text-cyan-400 font-semibold">Braço Esq:</span> <span className="font-bold text-white">{bracoEsq} cm</span>
+                  </div>
+                )}
+                {antebracoDir && (
+                  <div>
+                    <span className="text-cyan-400 font-semibold">Antebraço D:</span> <span className="font-bold text-white">{antebracoDir} cm</span>
+                  </div>
+                )}
+                {antebracoEsq && (
+                  <div>
+                    <span className="text-cyan-400 font-semibold">Antebraço E:</span> <span className="font-bold text-white">{antebracoEsq} cm</span>
+                  </div>
+                )}
+                {coxaDir && (
+                  <div>
+                    <span className="text-cyan-400 font-semibold">Coxa Dir:</span> <span className="font-bold text-white">{coxaDir} cm</span>
+                  </div>
+                )}
+                {coxaEsq && (
+                  <div>
+                    <span className="text-cyan-400 font-semibold">Coxa Esq:</span> <span className="font-bold text-white">{coxaEsq} cm</span>
+                  </div>
+                )}
+                {panturrilhaDir && (
+                  <div>
+                    <span className="text-cyan-400 font-semibold">Panturrilha D:</span> <span className="font-bold text-white">{panturrilhaDir} cm</span>
+                  </div>
+                )}
+                {panturrilhaEsq && (
+                  <div>
+                    <span className="text-cyan-400 font-semibold">Panturrilha E:</span> <span className="font-bold text-white">{panturrilhaEsq} cm</span>
+                  </div>
+                )}
+              </div>
+              <div className="border-t border-slate-800 pt-2 text-[11px] text-slate-400">
+                <span className="text-slate-300 font-medium">Método:</span> {instrumento} • {respiracao}
+              </div>
+              {observacoes && (
+                <div className="border-t border-slate-800 pt-2 text-[11px] text-slate-400">
+                  <span className="font-semibold text-slate-300">Obs:</span> {observacoes}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowConfirmModal(false)}
+                disabled={loading}
+                className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl text-xs transition cursor-pointer"
+              >
+                Voltar e Editar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmSave}
+                disabled={loading}
+                className="flex-1 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-xl text-xs shadow-md shadow-cyan-600/30 transition flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                Confirmar e Salvar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

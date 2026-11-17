@@ -5,13 +5,11 @@ import {
   Scale,
   Ruler,
   Dumbbell,
+  HeartPulse,
   Camera,
   Sparkles,
   ArrowRight,
   Flame,
-  Zap,
-  Heart,
-  Droplets,
   Calendar,
   Activity,
 } from 'lucide-react';
@@ -27,13 +25,14 @@ import {
   BarChart,
   Bar,
 } from 'recharts';
-import { WeightRecord, MeasureRecord, WorkoutRecord, PhotoRecord, UserProfile } from '../types';
+import { WeightRecord, MeasureRecord, CardioRecord, WorkoutRecord, PhotoRecord, UserProfile } from '../types';
 import { formatBRNumber, calculateIMC, parseDurationToHours, cleanDurationString } from '../utils/formatters';
 import { NavTab } from './Navbar';
 
 interface DashboardProps {
   weights: WeightRecord[];
   measures: MeasureRecord[];
+  cardios: CardioRecord[];
   workouts: WorkoutRecord[];
   photos: PhotoRecord[];
   profile: UserProfile;
@@ -43,6 +42,7 @@ interface DashboardProps {
 export const Dashboard: React.FC<DashboardProps> = ({
   weights,
   measures,
+  cardios,
   workouts,
   photos,
   profile,
@@ -55,7 +55,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const imcInfo = calculateIMC(currentWeight, profile.alturaMetros);
 
-  // Bioimpedance metrics
+  // Bioimpedance metrics from latest record
   const gorduraPercent = latestWeight?.gorduraPercent ?? 35.2;
   const pesoGordura = latestWeight?.pesoGordura ?? 39.4;
   const massaMuscular = latestWeight?.massaMuscularPercent ?? 62.1;
@@ -64,28 +64,51 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const metabolismo = latestWeight?.metabolismo ?? 2126.0;
 
   // Latest abdominal measurement
-  const latestAbdomenRecord = [...measures].reverse().find(m => m.abdomen && m.abdomen > 0);
+  const latestAbdomenRecord = [...measures].reverse().find((m) => m.abdomen && m.abdomen > 0);
   const latestAbdomen = latestAbdomenRecord ? latestAbdomenRecord.abdomen : 127;
 
-  // Workouts stats
-  let totalKm = 0;
-  let totalPassos = 0;
-  let totalCalorias = 0;
-  let totalSeconds = 0;
-  workouts.forEach((w) => {
-    totalKm += w.distanciaKm || 0;
-    totalPassos += w.passos || 0;
-    totalCalorias += w.calorias || 0;
-    const durHours = parseDurationToHours(w.tempoMovimento);
-    totalSeconds += Math.round(durHours * 3600);
+  // Cardio stats
+  let totalKmCardio = 0;
+  let totalPassosCardio = 0;
+  let totalCaloriasCardio = 0;
+  let totalSecondsCardio = 0;
+
+  cardios.forEach((c) => {
+    totalKmCardio += c.distanciaKm || 0;
+    totalPassosCardio += c.passos || 0;
+    totalCaloriasCardio += c.calorias || 0;
+    const durHours = parseDurationToHours(c.tempoMovimento);
+    totalSecondsCardio += Math.round(durHours * 3600);
   });
 
-  const totalH = Math.floor(totalSeconds / 3600);
-  const totalM = Math.floor((totalSeconds % 3600) / 60);
-  const totalS = totalSeconds % 60;
-  const formattedTotalTime = totalSeconds > 0
-    ? `${String(totalH).padStart(2, '0')}:${String(totalM).padStart(2, '0')}:${String(totalS).padStart(2, '0')}`
-    : (workouts[0]?.tempoMovimento ? cleanDurationString(workouts[0].tempoMovimento) : '00:58:43');
+  const cardioH = Math.floor(totalSecondsCardio / 3600);
+  const cardioM = Math.floor((totalSecondsCardio % 3600) / 60);
+  const cardioS = totalSecondsCardio % 60;
+  const formattedCardioTime =
+    totalSecondsCardio > 0
+      ? `${String(cardioH).padStart(2, '0')}:${String(cardioM).padStart(2, '0')}:${String(cardioS).padStart(2, '0')}`
+      : cardios[0]?.tempoMovimento
+      ? cleanDurationString(cardios[0].tempoMovimento)
+      : '00:58:43';
+
+  // Musculação stats
+  let totalMinWorkout = 0;
+  const uniqueWorkoutDays = new Set<string>();
+  workouts.forEach((w) => {
+    totalMinWorkout += w.duracaoMin || 0;
+    if (w.data) uniqueWorkoutDays.add(w.data);
+  });
+
+  const workoutHours = Math.floor(totalMinWorkout / 60);
+  const workoutRemMin = totalMinWorkout % 60;
+  const formattedWorkoutDuration =
+    totalMinWorkout > 0
+      ? workoutHours > 0
+        ? `${workoutHours}h ${workoutRemMin}m`
+        : `${workoutRemMin} min`
+      : 'N/A';
+
+  const lastWorkoutFocus = workouts.length > 0 ? workouts[workouts.length - 1].focoDivisao : 'Peitoral / Tríceps';
 
   // Chart data
   const chartDataWeights = weights.map((w) => ({
@@ -95,11 +118,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
     musculo: w.massaMuscularPercent,
   }));
 
-  const chartDataWorkouts = workouts.map((w) => ({
-    date: w.data,
-    distancia: w.distanciaKm || 0,
-    calorias: w.calorias || 0,
-    modalidade: w.modalidade,
+  const chartDataCardios = cardios.map((c) => ({
+    date: c.data,
+    distancia: c.distanciaKm || 0,
+    calorias: c.calorias || 0,
+    modalidade: c.modalidade,
   }));
 
   return (
@@ -115,7 +138,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               Acompanhamento Corporal & Bioimpedância em Tempo Real
             </div>
             <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-              Painel de Composição Corporal & Treinos
+              Painel Integrado das 5 Abas da Planilha
             </h2>
             <p className="text-slate-400 text-sm mt-1">
               Altura: <strong className="text-slate-200">{formatBRNumber(profile.alturaMetros, 2)} m</strong> • Peso de Partida: <strong className="text-slate-200">{formatBRNumber(initialWeight, 3)} kg</strong> • Abdômen: <strong className="text-slate-200">{latestAbdomen} cm</strong> • Fotos: <strong className="text-slate-200">{photos.length} reg.</strong>
@@ -126,38 +149,45 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => onNavigate('weight')}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-md shadow-emerald-600/30 transition transform active:scale-95 cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-md shadow-emerald-600/30 transition transform active:scale-95 cursor-pointer"
             >
               <Scale className="w-4 h-4" />
-              Lançar Peso (c/ Print)
+              Lançar Peso (OCR)
+            </button>
+            <button
+              onClick={() => onNavigate('cardio')}
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-md shadow-sky-600/30 transition transform active:scale-95 cursor-pointer"
+            >
+              <HeartPulse className="w-4 h-4" />
+              Lançar Cardio (Strava)
             </button>
             <button
               onClick={() => onNavigate('workout')}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-md shadow-sky-600/30 transition transform active:scale-95 cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-md shadow-indigo-600/30 transition transform active:scale-95 cursor-pointer"
             >
               <Dumbbell className="w-4 h-4" />
-              Lançar Treino Strava
+              Lançar Musculação
             </button>
             <button
               onClick={() => onNavigate('measure')}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs sm:text-sm font-semibold border border-slate-700 transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-cyan-700 hover:bg-cyan-600 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-md transition transform active:scale-95 cursor-pointer"
             >
               <Ruler className="w-4 h-4" />
               Medidas
             </button>
             <button
               onClick={() => onNavigate('photo')}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-purple-700 hover:bg-purple-600 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-md transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-purple-700 hover:bg-purple-600 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-md transition cursor-pointer"
             >
               <Camera className="w-4 h-4" />
-              Fotos Semanais
+              Fotos
             </button>
             <button
               onClick={() => onNavigate('assistant')}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-md shadow-purple-600/30 transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-md shadow-purple-600/30 transition cursor-pointer"
             >
               <Sparkles className="w-4 h-4" />
-              Pedir Análise Gemini
+              Gemini IA
             </button>
           </div>
         </div>
@@ -167,7 +197,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <div>
         <h3 className="text-xs uppercase font-bold tracking-wider text-slate-400 mb-3 flex items-center gap-2">
           <Activity className="w-4 h-4 text-emerald-400" />
-          Painel de Bioimpedância & Peso Corporal
+          Painel de Bioimpedância & Peso Corporal (8 Cards Dinâmicos)
         </h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
           {/* Card 1: Peso Inicial */}
@@ -248,9 +278,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
 
           {/* Card 5: Gordura Atual */}
-          <div className="bg-slate-800/60 backdrop-blur border border-amber-500/30 p-3 rounded-xl flex flex-col justify-between">
-            <span className="text-[10px] uppercase tracking-wider text-amber-400 font-semibold truncate flex items-center gap-1">
-              <Flame className="w-3 h-3 text-amber-400" />
+          <div className="bg-slate-800/60 backdrop-blur border border-slate-700/60 p-3 rounded-xl flex flex-col justify-between">
+            <span className="text-[10px] uppercase tracking-wider text-amber-400 font-semibold truncate">
               GORDURA ATUAL
             </span>
             <div className="mt-1">
@@ -258,45 +287,42 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 {formatBRNumber(gorduraPercent, 1)}%
               </span>
             </div>
-            <span className="text-[10px] text-slate-300 mt-1 truncate">
-              {formatBRNumber(pesoGordura, 1)} kg
+            <span className="text-[10px] text-slate-400 mt-1 truncate">
+              {formatBRNumber(pesoGordura, 1)} kg gordura
             </span>
           </div>
 
           {/* Card 6: Massa Muscular */}
-          <div className="bg-slate-800/60 backdrop-blur border border-sky-500/30 p-3 rounded-xl flex flex-col justify-between">
-            <span className="text-[10px] uppercase tracking-wider text-sky-400 font-semibold truncate flex items-center gap-1">
-              <Zap className="w-3 h-3 text-sky-400" />
+          <div className="bg-slate-800/60 backdrop-blur border border-slate-700/60 p-3 rounded-xl flex flex-col justify-between">
+            <span className="text-[10px] uppercase tracking-wider text-teal-400 font-semibold truncate">
               MASSA MUSCULAR
             </span>
             <div className="mt-1">
-              <span className="text-lg sm:text-xl font-black text-sky-300">
+              <span className="text-lg sm:text-xl font-black text-teal-300">
                 {formatBRNumber(massaMuscular, 1)}%
               </span>
             </div>
-            <span className="text-[10px] text-slate-300 mt-1 truncate">
-              {formatBRNumber(pesoMassaMusc, 1)} kg
+            <span className="text-[10px] text-slate-400 mt-1 truncate">
+              {formatBRNumber(pesoMassaMusc, 1)} kg músculo
             </span>
           </div>
 
           {/* Card 7: Gordura Visceral */}
-          <div className="bg-slate-800/60 backdrop-blur border border-rose-500/30 p-3 rounded-xl flex flex-col justify-between">
-            <span className="text-[10px] uppercase tracking-wider text-rose-400 font-semibold truncate flex items-center gap-1">
-              <Heart className="w-3 h-3 text-rose-400" />
-              GORDURA VISCERAL
+          <div className="bg-slate-800/60 backdrop-blur border border-slate-700/60 p-3 rounded-xl flex flex-col justify-between">
+            <span className="text-[10px] uppercase tracking-wider text-rose-400 font-semibold truncate">
+              VISCERAL
             </span>
             <div className="mt-1">
               <span className="text-lg sm:text-xl font-black text-rose-300">
                 {formatBRNumber(gorduraVisceral, 1)}
               </span>
             </div>
-            <span className="text-[10px] text-slate-400 mt-1 truncate">Nível bioimpedância</span>
+            <span className="text-[10px] text-slate-400 mt-1 truncate">Nível de gordura</span>
           </div>
 
           {/* Card 8: Metabolismo Basal */}
-          <div className="bg-slate-800/60 backdrop-blur border border-purple-500/30 p-3 rounded-xl flex flex-col justify-between">
-            <span className="text-[10px] uppercase tracking-wider text-purple-400 font-semibold truncate flex items-center gap-1">
-              <Droplets className="w-3 h-3 text-purple-400" />
+          <div className="bg-slate-800/60 backdrop-blur border border-slate-700/60 p-3 rounded-xl flex flex-col justify-between">
+            <span className="text-[10px] uppercase tracking-wider text-purple-400 font-semibold truncate">
               METABOLISMO
             </span>
             <div className="mt-1">
@@ -310,55 +336,104 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </div>
 
-      {/* Strava & Treinos Summary Bar */}
+      {/* Cardio Summary Bar (Aba "Cardio") */}
       <div className="bg-slate-850 border border-sky-500/30 rounded-2xl p-4 sm:p-5 shadow-lg">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-xl bg-sky-500/20 text-sky-400 border border-sky-500/30">
-              <Dumbbell className="w-5 h-5" />
+              <HeartPulse className="w-5 h-5" />
             </div>
             <div>
               <h3 className="text-base font-bold text-white flex items-center gap-2">
-                Treinos & Atividades Físicas (Strava)
+                Cardio & Atividades Aeróbicas (Strava)
                 <span className="text-xs px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30">
-                  {workouts.length} registrados
+                  {cardios.length} registradas
                 </span>
               </h3>
               <p className="text-xs text-slate-400">
-                Gasto calórico estimado com base no seu peso atual ({formatBRNumber(currentWeight, 3)} kg)
+                Caminhada, Corrida, Ciclismo/Bike e Esteira • Gasto calórico estimado com base no peso ({formatBRNumber(currentWeight, 3)} kg)
               </p>
             </div>
           </div>
           <button
-            onClick={() => onNavigate('workout')}
-            className="text-xs text-sky-400 hover:text-sky-300 font-semibold flex items-center gap-1"
+            onClick={() => onNavigate('cardio')}
+            className="text-xs text-sky-400 hover:text-sky-300 font-semibold flex items-center gap-1 cursor-pointer"
           >
-            Lançar novo treino com print <ArrowRight className="w-3.5 h-3.5" />
+            Lançar cardio com print <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
           <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-700/60">
-            <span className="text-xs text-slate-400 block font-medium">Total de Treinos</span>
-            <span className="text-lg font-black text-white mt-1 block">{workouts.length}</span>
+            <span className="text-xs text-slate-400 block font-medium">Total de Atividades</span>
+            <span className="text-lg font-black text-white mt-1 block">{cardios.length}</span>
           </div>
           <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-700/60">
             <span className="text-xs text-slate-400 block font-medium">Distância Total</span>
-            <span className="text-lg font-black text-sky-400 mt-1 block">{formatBRNumber(totalKm, 2)} km</span>
+            <span className="text-lg font-black text-sky-400 mt-1 block">{formatBRNumber(totalKmCardio, 2)} km</span>
           </div>
           <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-700/60">
             <span className="text-xs text-slate-400 block font-medium">Tempo Total</span>
-            <span className="text-lg font-black text-white mt-1 block">
-              {formattedTotalTime}
+            <span className="text-lg font-black text-white mt-1 block font-mono">
+              {formattedCardioTime}
             </span>
           </div>
           <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-700/60">
             <span className="text-xs text-slate-400 block font-medium">Passos Totais</span>
-            <span className="text-lg font-black text-emerald-400 mt-1 block">{totalPassos.toLocaleString('pt-BR')}</span>
+            <span className="text-lg font-black text-emerald-400 mt-1 block">{totalPassosCardio.toLocaleString('pt-BR')}</span>
           </div>
           <div className="col-span-2 sm:col-span-1 bg-slate-900/80 p-3 rounded-xl border border-amber-500/40">
             <span className="text-xs text-amber-400 block font-medium">Calorias Estimadas</span>
-            <span className="text-lg font-black text-amber-300 mt-1 block">{totalCalorias.toLocaleString('pt-BR')} kcal</span>
+            <span className="text-lg font-black text-amber-300 mt-1 block">{totalCaloriasCardio.toLocaleString('pt-BR')} kcal</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Musculação / Academia Fast fit Summary Bar (Aba "Treinos") */}
+      <div className="bg-slate-850 border border-indigo-500/30 rounded-2xl p-4 sm:p-5 shadow-lg">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+              <Dumbbell className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                Musculação & Academia (Aba Treinos)
+                <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                  {workouts.length} treinos
+                </span>
+              </h3>
+              <p className="text-xs text-slate-400">
+                Divisões musculares, exercícios executados, séries, cargas e percepção de esforço (PSE)
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => onNavigate('workout')}
+            className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1 cursor-pointer"
+          >
+            Lançar treino de musculação <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+          <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-700/60">
+            <span className="text-xs text-slate-400 block font-medium">Total de Treinos</span>
+            <span className="text-lg font-black text-white mt-1 block">{workouts.length}</span>
+          </div>
+          <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-700/60">
+            <span className="text-xs text-slate-400 block font-medium">Tempo em Academia</span>
+            <span className="text-lg font-black text-indigo-400 mt-1 block">{formattedWorkoutDuration}</span>
+          </div>
+          <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-700/60">
+            <span className="text-xs text-slate-400 block font-medium">Frequência (Dias)</span>
+            <span className="text-lg font-black text-teal-400 mt-1 block">{uniqueWorkoutDays.size} dia(s)</span>
+          </div>
+          <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-700/60">
+            <span className="text-xs text-slate-400 block font-medium">Último Foco</span>
+            <span className="text-sm font-bold text-white mt-2 block truncate" title={lastWorkoutFocus}>
+              {lastWorkoutFocus}
+            </span>
           </div>
         </div>
       </div>
@@ -371,15 +446,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <div>
               <h3 className="text-base font-semibold text-white flex items-center gap-2">
                 <Scale className="w-4 h-4 text-emerald-400" />
-                Evolução Temporal do Peso (kg) & Gordura (%)
+                Evolução Temporal do Peso (kg) & Bioimpedância
               </h3>
               <p className="text-xs text-slate-400">
-                Comparativo de redução ponderal e bioimpedância
+                Comparativo de redução ponderal diária
               </p>
             </div>
             <button
               onClick={() => onNavigate('weight')}
-              className="text-xs text-emerald-400 hover:text-emerald-300 font-medium flex items-center gap-1"
+              className="text-xs text-emerald-400 hover:text-emerald-300 font-medium flex items-center gap-1 cursor-pointer"
             >
               Novo registro <ArrowRight className="w-3 h-3" />
             </button>
@@ -420,34 +495,34 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </div>
 
-        {/* Chart 2: Treinos Strava & Gasto Calórico */}
+        {/* Chart 2: Cardio Strava & Gasto Calórico */}
         <div className="bg-slate-800/60 backdrop-blur border border-slate-700/60 p-5 rounded-2xl shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-base font-semibold text-white flex items-center gap-2">
-                <Dumbbell className="w-4 h-4 text-sky-400" />
-                Treinos & Gasto Calórico Estimado (kcal)
+                <HeartPulse className="w-4 h-4 text-sky-400" />
+                Atividades Aeróbicas & Gasto Calórico (kcal)
               </h3>
               <p className="text-xs text-slate-400">
-                Atividades registradas no Strava com calorias calculadas
+                Atividades de Cardio registradas no Strava
               </p>
             </div>
             <button
-              onClick={() => onNavigate('workout')}
-              className="text-xs text-sky-400 hover:text-sky-300 font-medium flex items-center gap-1"
+              onClick={() => onNavigate('cardio')}
+              className="text-xs text-sky-400 hover:text-sky-300 font-medium flex items-center gap-1 cursor-pointer"
             >
-              Lançar treino <ArrowRight className="w-3 h-3" />
+              Lançar cardio <ArrowRight className="w-3 h-3" />
             </button>
           </div>
 
           <div className="h-64 w-full">
-            {chartDataWorkouts.length === 0 ? (
+            {chartDataCardios.length === 0 ? (
               <div className="h-full flex items-center justify-center text-slate-500 text-sm">
-                Nenhum treino registrado ainda.
+                Nenhum treino de cardio registrado ainda.
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartDataWorkouts} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <BarChart data={chartDataCardios} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.5} />
                   <XAxis dataKey="date" stroke="#94a3b8" fontSize={12} tickLine={false} />
                   <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} />
@@ -477,9 +552,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </h3>
           <button
             onClick={() => onNavigate('history')}
-            className="text-xs text-emerald-400 hover:text-emerald-300 font-medium flex items-center gap-1"
+            className="text-xs text-emerald-400 hover:text-emerald-300 font-medium flex items-center gap-1 cursor-pointer"
           >
-            Ver histórico completo das 4 abas <ArrowRight className="w-3 h-3" />
+            Ver histórico completo das 5 abas <ArrowRight className="w-3 h-3" />
           </button>
         </div>
 
@@ -521,7 +596,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   </td>
                   <td className="py-2.5 px-3 text-slate-300">{r.imc ? formatBRNumber(r.imc, 2) : '-'}</td>
                   <td className="py-2.5 px-3 text-amber-300 font-medium">{r.gorduraPercent ? `${formatBRNumber(r.gorduraPercent, 1)}%` : '-'}</td>
-                  <td className="py-2.5 px-3 text-sky-300 font-medium">{r.massaMuscularPercent ? `${formatBRNumber(r.massaMuscularPercent, 1)}%` : '-'}</td>
+                  <td className="py-2.5 px-3 text-teal-300 font-medium">{r.massaMuscularPercent ? `${formatBRNumber(r.massaMuscularPercent, 1)}%` : '-'}</td>
                   <td className="py-2.5 px-3 text-rose-300">{r.gorduraVisceral ? formatBRNumber(r.gorduraVisceral, 1) : '-'}</td>
                   <td className="py-2.5 px-3 text-purple-300">{r.metabolismo ? `${formatBRNumber(r.metabolismo, 0)} kcal` : '-'}</td>
                 </tr>

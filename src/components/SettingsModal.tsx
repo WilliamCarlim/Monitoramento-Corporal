@@ -24,7 +24,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [altura, setAltura] = useState<string>(profile.alturaMetros.toString());
   const [pesoInicial, setPesoInicial] = useState<string>(profile.pesoInicial.toString());
   const [scriptUrl, setScriptUrl] = useState<string>(currentSettings.scriptUrl || '');
-  const [geminiKey, setGeminiKey] = useState<string>(currentSettings.geminiApiKey || '');
+  const [geminiKey, setGeminiKey] = useState<string>(currentSettings.geminiKey || '');
   const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
   const [cacheCleared, setCacheCleared] = useState<boolean>(false);
 
@@ -46,9 +46,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     onUpdateProfile(updatedProfile);
 
     saveApiSettings({
-      scriptUrl: scriptUrl.trim() || undefined,
-      geminiApiKey: geminiKey.trim() || undefined,
-      mode: scriptUrl.trim() ? 'script' : 'cloud',
+      spreadsheetId: currentSettings.spreadsheetId || '1VvS_1QHdbXDEDM1Zju4FcrWriLfeaZwuqBdp9HIMi-U',
+      scriptUrl: scriptUrl.trim(),
+      geminiKey: geminiKey.trim(),
     });
 
     setSavedSuccess(true);

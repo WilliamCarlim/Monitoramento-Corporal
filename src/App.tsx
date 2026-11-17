@@ -3,6 +3,7 @@ import { Navbar, NavTab } from './components/Navbar';
 import { Dashboard } from './components/Dashboard';
 import { WeightForm } from './components/WeightForm';
 import { MeasureForm } from './components/MeasureForm';
+import { CardioForm } from './components/CardioForm';
 import { WorkoutForm } from './components/WorkoutForm';
 import { PhotoForm } from './components/PhotoForm';
 import { HistoryTable } from './components/HistoryTable';
@@ -10,12 +11,14 @@ import { GeminiAssistant } from './components/GeminiAssistant';
 import { SettingsModal } from './components/SettingsModal';
 import { CheckCircle2 } from 'lucide-react';
 
-import { WeightRecord, MeasureRecord, WorkoutRecord, PhotoRecord, UserProfile } from './types';
+import { WeightRecord, MeasureRecord, CardioRecord, WorkoutRecord, PhotoRecord, UserProfile } from './types';
 import {
   fetchWeights,
   addWeightRecord,
   fetchMeasures,
   addMeasureRecord,
+  fetchCardios,
+  addCardioRecord,
   fetchWorkouts,
   addWorkoutRecord,
   fetchPhotos,
@@ -27,6 +30,7 @@ export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
   const [weights, setWeights] = useState<WeightRecord[]>([]);
   const [measures, setMeasures] = useState<MeasureRecord[]>([]);
+  const [cardios, setCardios] = useState<CardioRecord[]>([]);
   const [workouts, setWorkouts] = useState<WorkoutRecord[]>([]);
   const [photos, setPhotos] = useState<PhotoRecord[]>([]);
   const [profile, setProfile] = useState<UserProfile>(getStoredProfile());
@@ -37,19 +41,21 @@ export const App: React.FC = () => {
   const [lastSyncTime, setLastSyncTime] = useState<string>('');
   const [syncToast, setSyncToast] = useState<string | null>(null);
 
-  // Load and sync data from Cloud / Sheets across all 4 tabs
+  // Load and sync data from Cloud / Sheets across all 5 tabs
   const syncData = useCallback(async (silent = false) => {
     if (!silent) setIsSyncing(true);
     try {
-      const [weightsRes, measuresRes, workoutsRes, photosRes] = await Promise.all([
+      const [weightsRes, measuresRes, cardiosRes, workoutsRes, photosRes] = await Promise.all([
         fetchWeights(),
         fetchMeasures(),
+        fetchCardios(),
         fetchWorkouts(),
         fetchPhotos(),
       ]);
 
       setWeights(weightsRes.data);
       setMeasures(measuresRes.data);
+      setCardios(cardiosRes.data);
       setWorkouts(workoutsRes.data);
       setPhotos(photosRes.data);
 
@@ -58,6 +64,8 @@ export const App: React.FC = () => {
           ? weightsRes.source
           : measuresRes.source !== 'local'
           ? measuresRes.source
+          : cardiosRes.source !== 'local'
+          ? cardiosRes.source
           : workoutsRes.source !== 'local'
           ? workoutsRes.source
           : photosRes.source;
@@ -68,7 +76,7 @@ export const App: React.FC = () => {
 
       if (!silent) {
         setSyncToast(
-          `Planilha sincronizada! (${weightsRes.data.length} pesagens, ${workoutsRes.data.length} treinos, ${photosRes.data.length} fotos)`
+          `Planilha sincronizada! (${weightsRes.data.length} pesagens, ${cardiosRes.data.length} cardios, ${workoutsRes.data.length} treinos, ${photosRes.data.length} fotos)`
         );
         setTimeout(() => setSyncToast(null), 3500);
       }
@@ -116,6 +124,14 @@ export const App: React.FC = () => {
 
   const handleMeasureSubmit = async (record: MeasureRecord) => {
     const res = await addMeasureRecord(record);
+    if (res.success) {
+      await syncData(true);
+    }
+    return res;
+  };
+
+  const handleCardioSubmit = async (record: CardioRecord) => {
+    const res = await addCardioRecord(record);
     if (res.success) {
       await syncData(true);
     }
@@ -179,6 +195,7 @@ export const App: React.FC = () => {
               <Dashboard
                 weights={weights}
                 measures={measures}
+                cardios={cardios}
                 workouts={workouts}
                 photos={photos}
                 profile={profile}
@@ -202,9 +219,16 @@ export const App: React.FC = () => {
               />
             )}
 
+            {activeTab === 'cardio' && (
+              <CardioForm
+                latestWeight={weights[weights.length - 1]}
+                onSubmit={handleCardioSubmit}
+                onSuccess={() => setActiveTab('dashboard')}
+              />
+            )}
+
             {activeTab === 'workout' && (
               <WorkoutForm
-                latestWeight={weights[weights.length - 1]}
                 onSubmit={handleWorkoutSubmit}
                 onSuccess={() => setActiveTab('dashboard')}
               />
@@ -222,6 +246,7 @@ export const App: React.FC = () => {
               <HistoryTable
                 weights={weights}
                 measures={measures}
+                cardios={cardios}
                 workouts={workouts}
                 photos={photos}
               />
@@ -231,6 +256,7 @@ export const App: React.FC = () => {
               <GeminiAssistant
                 weights={weights}
                 measures={measures}
+                cardios={cardios}
                 workouts={workouts}
                 photos={photos}
               />

@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Sparkles, Send, Bot, User, Trash2, HelpCircle, Loader2 } from 'lucide-react';
-import { AssistantMessage, WeightRecord, MeasureRecord, WorkoutRecord, PhotoRecord } from '../types';
+import { AssistantMessage, WeightRecord, MeasureRecord, CardioRecord, WorkoutRecord, PhotoRecord } from '../types';
 import { askGemini } from '../services/api';
 
 interface GeminiAssistantProps {
   weights: WeightRecord[];
   measures: MeasureRecord[];
+  cardios?: CardioRecord[];
   workouts?: WorkoutRecord[];
   photos?: PhotoRecord[];
 }
@@ -14,13 +15,21 @@ const QUICK_PROMPTS = [
   'Analisar minha evolução geral e próximos focos',
   'Explicar oscilação de peso pós-treino e almoço',
   'Interpretar medida de abdômen de 127cm com trena vs fita métrica',
-  'Analisar meu último treino do Strava e gasto calórico',
+  'Analisar meu último cardio do Strava e gasto calórico',
+  'Analisar meu treino de musculação na Fast fit (Peitoral/Tríceps)',
   'Qual o protocolo ideal de pesagem e medidas para os próximos dias?',
 ];
 
-export const GeminiAssistant: React.FC<GeminiAssistantProps> = ({ weights, measures, workouts = [], photos = [] }) => {
+export const GeminiAssistant: React.FC<GeminiAssistantProps> = ({
+  weights,
+  measures,
+  cardios = [],
+  workouts = [],
+  photos = [],
+}) => {
   const latestWeight = weights.length > 0 ? weights[weights.length - 1] : null;
   const latestAbdomen = [...measures].reverse().find(m => m.abdomen)?.abdomen || 127;
+  const latestCardio = cardios.length > 0 ? cardios[cardios.length - 1] : null;
   const latestWorkout = workouts.length > 0 ? workouts[workouts.length - 1] : null;
 
   const [messages, setMessages] = useState<AssistantMessage[]>([
@@ -29,11 +38,12 @@ export const GeminiAssistant: React.FC<GeminiAssistantProps> = ({ weights, measu
       role: 'assistant',
       content: `Olá! Sou seu **Assistente de Acompanhamento Corporal com Inteligência Artificial** (Gemini).
 
-Tenho acesso em tempo real aos seus registros das 4 abas da planilha:
+Tenho acesso em tempo real aos seus registros das 5 abas da planilha Google Sheets:
 * **Peso Inicial / Atual:** ${latestWeight ? `${latestWeight.peso} kg (${latestWeight.data} - ${latestWeight.contexto})` : '113,250 kg'}
-* **Bioimpedância:** Gordura ${latestWeight?.gorduraPercent || 35.2}% | Massa Muscular ${latestWeight?.massaMuscularPercent || 62.1}% | Visceral ${latestWeight?.gorduraVisceral || 26.0}
+* **Bioimpedância:** Gordura ${latestWeight?.gorduraPercent || 35.2}% | Massa Muscular ${latestWeight?.massaMuscularPercent || 62.1}% | Visceral ${latestWeight?.gorduraVisceral || 26.0} | Basal ${latestWeight?.metabolismo || 2126} kcal
 * **Medida de Abdômen:** ${latestAbdomen} cm
-* **Treinos:** ${latestWorkout ? `${latestWorkout.modalidade} (${latestWorkout.distanciaKm} km, ${latestWorkout.calorias} kcal)` : 'Nenhum treino registrado ainda'}
+* **Cardio (Strava):** ${latestCardio ? `${latestCardio.modalidade} (${latestCardio.distanciaKm} km, ${latestCardio.calorias} kcal)` : 'Nenhuma atividade aeróbica'}
+* **Musculação:** ${latestWorkout ? `${latestWorkout.focoDivisao} (${latestWorkout.duracaoMin || '-'} min, PSE ${latestWorkout.esforcoPse || '-'})` : 'Nenhum treino de academia'}
 * **Fotos Semanais:** ${photos.length} registro(s)
 
 Como posso ajudar você hoje? Você pode escolher uma das perguntas rápidas abaixo ou digitar sua dúvida.`,

@@ -1,4 +1,4 @@
-import { WeightRecord, MeasureRecord, WorkoutRecord, PhotoRecord, UserProfile } from '../types';
+import { WeightRecord, MeasureRecord, CardioRecord, WorkoutRecord, PhotoRecord, UserProfile } from '../types';
 import { cleanDurationString } from '../utils/formatters';
 
 export const INITIAL_USER_PROFILE: UserProfile = {
@@ -34,7 +34,7 @@ export const INITIAL_WEIGHT_RECORDS: WeightRecord[] = [
     alturaApp: 176,
     idadeApp: 33,
     melhorPeso30d: 107.85,
-    observacoes: 'Primeiro registro de pesagem (início do plano)',
+    observacoes: 'Primeiro registro de pesagem (início do plano) • App 16/11 12:21 (vs 20/10 +5,40 kg)',
   },
   {
     id: 'w-2',
@@ -59,7 +59,7 @@ export const INITIAL_WEIGHT_RECORDS: WeightRecord[] = [
     alturaApp: 176,
     idadeApp: 33,
     melhorPeso30d: 107.85,
-    observacoes: 'Aferição matinal em jejum',
+    observacoes: 'Pesagem matinal (Gordura corporal: 35,2%)',
   },
 ];
 
@@ -68,13 +68,13 @@ export const INITIAL_MEASURE_RECORDS: MeasureRecord[] = [
     id: 'm-1',
     data: '16/11/2026',
     abdomen: 127,
-    observacoes: 'medição preliminar com trena na altura do umbigo, soltando o ar até ficar sem fôlego; aguardando fita métrica',
+    observacoes: 'Medição preliminar com trena na altura do umbigo, soltando o ar até ficar sem fôlego (aguardando fita métrica para medida oficial)',
   },
 ];
 
-export const INITIAL_WORKOUT_RECORDS: WorkoutRecord[] = [
+export const INITIAL_CARDIO_RECORDS: CardioRecord[] = [
   {
-    id: 't-1',
+    id: 'c-1',
     data: '16/11/2026',
     diaSemana: 'segunda-feira',
     contexto: 'Entardecer 18:12',
@@ -85,7 +85,21 @@ export const INITIAL_WORKOUT_RECORDS: WorkoutRecord[] = [
     passos: 6944,
     elevacaoM: 51,
     calorias: 470,
-    observacoes: 'Caminhada pós-treino no ritmo de recuperação',
+    observacoes: 'Caminhada ao entardecer registrada no Strava (ritmo médio ~10,3 min/km)',
+  },
+];
+
+export const INITIAL_WORKOUT_RECORDS: WorkoutRecord[] = [
+  {
+    id: 't-1',
+    data: '16/11/2026',
+    diaSemana: 'segunda-feira',
+    contexto: 'Academia Fast fit',
+    focoDivisao: 'Peitoral / Tríceps',
+    duracaoMin: 60,
+    exerciciosCargas: 'Supino reto com barra - 3 séries (30kg máquina); Supino inclinado com halteres - 3 séries (15 cada lado máquina); Peck deck - 3 séries (50); Crucifixo na polia - 3 séries (7.5); Tríceps francês - 3 séries; Tríceps corda - 3 séries (17.5); Tríceps testa com halteres - 3 séries',
+    esforcoPse: 8,
+    observacoes: '7 exercícios executados • Fast fit • Ficha: Abcde w hipertrofi...',
   },
 ];
 
@@ -102,12 +116,13 @@ export const INITIAL_PHOTO_RECORDS: PhotoRecord[] = [
 ];
 
 const STORAGE_KEYS = {
-  WEIGHTS: 'mc_weight_records_v2',
-  MEASURES: 'mc_measure_records_v2',
-  WORKOUTS: 'mc_workout_records_v2',
-  PHOTOS: 'mc_photo_records_v2',
-  PROFILE: 'mc_user_profile_v2',
-  API_CONFIG: 'mc_api_config_v2',
+  WEIGHTS: 'mc_weight_records_v3',
+  MEASURES: 'mc_measure_records_v3',
+  CARDIOS: 'mc_cardio_records_v3',
+  WORKOUTS: 'mc_workout_records_v3',
+  PHOTOS: 'mc_photo_records_v3',
+  PROFILE: 'mc_user_profile_v3',
+  API_CONFIG: 'mc_api_config_v3',
 };
 
 export function getStoredWeights(): WeightRecord[] {
@@ -152,6 +167,31 @@ export function saveStoredMeasures(records: MeasureRecord[]): void {
   }
 }
 
+export function getStoredCardios(): CardioRecord[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.CARDIOS);
+    if (!raw) {
+      saveStoredCardios(INITIAL_CARDIO_RECORDS);
+      return INITIAL_CARDIO_RECORDS;
+    }
+    const list: CardioRecord[] = JSON.parse(raw);
+    return list.map((c) => ({
+      ...c,
+      tempoMovimento: cleanDurationString(c.tempoMovimento),
+    }));
+  } catch {
+    return INITIAL_CARDIO_RECORDS;
+  }
+}
+
+export function saveStoredCardios(records: CardioRecord[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEYS.CARDIOS, JSON.stringify(records));
+  } catch (e) {
+    console.error('Error saving cardios to localStorage', e);
+  }
+}
+
 export function getStoredWorkouts(): WorkoutRecord[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.WORKOUTS);
@@ -159,11 +199,7 @@ export function getStoredWorkouts(): WorkoutRecord[] {
       saveStoredWorkouts(INITIAL_WORKOUT_RECORDS);
       return INITIAL_WORKOUT_RECORDS;
     }
-    const list: WorkoutRecord[] = JSON.parse(raw);
-    return list.map((w) => ({
-      ...w,
-      tempoMovimento: cleanDurationString(w.tempoMovimento),
-    }));
+    return JSON.parse(raw);
   } catch {
     return INITIAL_WORKOUT_RECORDS;
   }
@@ -219,15 +255,27 @@ export function saveStoredProfile(profile: UserProfile): void {
   }
 }
 
-export function getApiSettings(): { scriptUrl?: string; geminiApiKey?: string; mode: 'cloud' | 'script' | 'local' } {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEYS.API_CONFIG);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return { mode: 'cloud' };
+export interface ApiSettings {
+  spreadsheetId: string;
+  scriptUrl: string;
+  geminiKey: string;
 }
 
-export function saveApiSettings(settings: { scriptUrl?: string; geminiApiKey?: string; mode: 'cloud' | 'script' | 'local' }): void {
+export function getApiSettings(): ApiSettings {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.API_CONFIG);
+    if (raw) {
+      return JSON.parse(raw);
+    }
+  } catch {}
+  return {
+    spreadsheetId: '1VvS_1QHdbXDEDM1Zju4FcrWriLfeaZwuqBdp9HIMi-U',
+    scriptUrl: '',
+    geminiKey: '',
+  };
+}
+
+export function saveApiSettings(settings: ApiSettings): void {
   try {
     localStorage.setItem(STORAGE_KEYS.API_CONFIG, JSON.stringify(settings));
   } catch (e) {

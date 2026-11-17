@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Scale, Calendar, Clock, FileText, CheckCircle2, AlertCircle, Camera, Upload, Sparkles, Loader2 } from 'lucide-react';
+import { Scale, Calendar, Clock, FileText, CheckCircle2, AlertCircle, Camera, Upload, Sparkles, Loader2, Check, X } from 'lucide-react';
 import { WeightRecord, UserProfile } from '../types';
 import { getTodayBR, getDayOfWeekBR, parseBRNumber, formatBRNumber, calculateIMC } from '../utils/formatters';
 import { extractFromPrint } from '../services/api';
@@ -42,6 +42,7 @@ export const WeightForm: React.FC<WeightFormProps> = ({
   const [loading, setLoading] = useState<boolean>(false);
   const [ocrLoading, setOcrLoading] = useState<boolean>(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -118,7 +119,7 @@ export const WeightForm: React.FC<WeightFormProps> = ({
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!parsedPeso || parsedPeso <= 30 || parsedPeso >= 350) {
       setFeedback({
@@ -127,7 +128,10 @@ export const WeightForm: React.FC<WeightFormProps> = ({
       });
       return;
     }
+    setShowConfirmModal(true);
+  };
 
+  const handleConfirmSave = async () => {
     setLoading(true);
     setFeedback(null);
 
@@ -159,6 +163,7 @@ export const WeightForm: React.FC<WeightFormProps> = ({
     try {
       const res = await onSubmit(record);
       if (res.success) {
+        setShowConfirmModal(false);
         setFeedback({
           type: 'success',
           message: `Peso e bioimpedância salvos com sucesso na planilha!`,
@@ -511,6 +516,102 @@ export const WeightForm: React.FC<WeightFormProps> = ({
           )}
         </button>
       </form>
+
+      {/* Modal de Revisão e Confirmação */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-slate-850 border border-emerald-500/40 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-in fade-in duration-200">
+            <div className="flex items-center justify-between border-b border-slate-700 pb-3">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                Confirmar Pesagem & Bioimpedância
+              </h3>
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="text-slate-400 hover:text-white transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-400">
+              Revise os valores extraídos/digitados antes de gravar na aba <strong>"Registro de Peso"</strong> da planilha Google Sheets:
+            </p>
+
+            <div className="bg-slate-900 rounded-xl p-4 space-y-2.5 text-xs text-slate-300 border border-slate-800">
+              <div className="flex justify-between items-center pb-2 border-b border-slate-800">
+                <span className="text-slate-400">Data / Contexto:</span>
+                <span className="font-semibold text-white">{data} • {contexto} ({diaSemana})</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400">Peso Corporal:</span>
+                <span className="text-lg font-black text-emerald-400">{formatBRNumber(parsedPeso, 3)} kg</span>
+              </div>
+              <div className="flex justify-between items-center text-[11px]">
+                <span className="text-slate-400">Variação vs Anterior / Inicial:</span>
+                <span className="text-slate-200">
+                  {liveDiffAnterior !== null && (liveDiffAnterior > 0 ? `+${formatBRNumber(liveDiffAnterior, 3)}` : `${formatBRNumber(liveDiffAnterior, 3)}`)} kg / {liveDiffInicial !== null && (liveDiffInicial > 0 ? `+${formatBRNumber(liveDiffInicial, 3)}` : `${formatBRNumber(liveDiffInicial, 3)}`)} kg
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400">IMC (Ref. 1,80m):</span>
+                <span className="font-bold text-white">{liveIMC?.imc ? formatBRNumber(liveIMC.imc, 2) : '-'} ({liveIMC?.classificacao || '-'})</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800 text-[11px]">
+                <div>
+                  <span className="text-amber-400 font-medium">Gordura:</span>{' '}
+                  <span className="text-white font-bold">{gorduraPercent}% ({pesoGordura} kg)</span>
+                </div>
+                <div>
+                  <span className="text-teal-400 font-medium">Massa Musc.:</span>{' '}
+                  <span className="text-white font-bold">{massaMuscularPercent}% ({pesoMassaMuscular} kg)</span>
+                </div>
+                <div>
+                  <span className="text-blue-400 font-medium">Água:</span>{' '}
+                  <span className="text-white font-bold">{aguaPercent}% ({pesoAgua} kg)</span>
+                </div>
+                <div>
+                  <span className="text-red-400 font-medium">Gordura Visceral:</span>{' '}
+                  <span className="text-white font-bold">{gorduraVisceral}</span>
+                </div>
+                <div>
+                  <span className="text-purple-400 font-medium">Metabolismo Basal:</span>{' '}
+                  <span className="text-white font-bold">{metabolismo} kcal</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-medium">Melhor Peso 30d:</span>{' '}
+                  <span className="text-white font-bold">{melhorPeso30d} kg</span>
+                </div>
+              </div>
+              {observacoes && (
+                <div className="border-t border-slate-800 pt-2 text-[11px] text-slate-400">
+                  <span className="font-semibold text-slate-300">Obs:</span> {observacoes}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowConfirmModal(false)}
+                disabled={loading}
+                className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl text-xs transition cursor-pointer"
+              >
+                Voltar e Editar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmSave}
+                disabled={loading}
+                className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs shadow-md shadow-emerald-600/30 transition flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                Confirmar e Salvar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

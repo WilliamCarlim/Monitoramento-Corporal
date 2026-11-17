@@ -348,7 +348,8 @@ function atualizarCardsCardio(sheet) {
   const timeFormatted = totalSeconds > 0 ? formatSec(totalSeconds) : '01:56:11';
 
   const titles = [
-    'TOTAL ATIVIDADES', 'DISTÂNCIA TOTAL', 'TEMPO TOTAL', 'TEMPO MENSAL', 'TEMPO SEMANAL',
+    'TOTAL ATIVIDADES', 'DISTÂNCIA TOTAL', 'DISTÂNCIA MÊS', 'DISTÂNCIA SEM',
+    'TEMPO TOTAL', 'TEMPO MENSAL', 'TEMPO SEMANAL',
     'PASSOS TOTAL', 'PASSOS MENSAL', 'PASSOS SEMANAL',
     'CALORIAS TOTAL', 'CALORIAS MENSAL', 'CALORIAS SEMANAL',
     'CAMINHADA TOTAL', 'CAMINHADA MÊS', 'CAMINHADA SEM', 'BIKE TOTAL', 'BIKE MÊS', 'BIKE SEM'
@@ -356,6 +357,8 @@ function atualizarCardsCardio(sheet) {
 
   const values = [
     `${cardios.length} atividade(s)`,
+    `${totalKm.toFixed(2).replace('.', ',')} km`,
+    `${totalKm.toFixed(2).replace('.', ',')} km`,
     `${totalKm.toFixed(2).replace('.', ',')} km`,
     timeFormatted,
     timeFormatted,
@@ -375,7 +378,8 @@ function atualizarCardsCardio(sheet) {
   ];
 
   const subtitles = [
-    'Sessões registradas', 'Quilometragem geral', 'Duração geral', 'No mês corrente', 'Na semana corrente',
+    'Sessões registradas', 'Quilometragem geral', 'No mês corrente', 'Na semana corrente',
+    'Duração geral', 'No mês corrente', 'Na semana corrente',
     'Passos acumulados', 'No mês corrente', 'Na semana corrente',
     'Gasto calórico total', 'No mês corrente', 'Na semana corrente',
     'A pé acumulado', 'A pé no mês', 'A pé na semana', 'Ciclismo total', 'Ciclismo no mês', 'Ciclismo na semana'

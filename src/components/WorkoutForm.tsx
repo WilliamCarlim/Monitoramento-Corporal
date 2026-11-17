@@ -13,12 +13,14 @@ import {
   Check,
   X,
   Gauge,
+  Flame,
 } from 'lucide-react';
-import { WorkoutRecord } from '../types';
-import { getTodayBR, getDayOfWeekBR } from '../utils/formatters';
+import { WorkoutRecord, WeightRecord } from '../types';
+import { getTodayBR, getDayOfWeekBR, estimateGymCalories } from '../utils/formatters';
 import { extractFromPrint } from '../services/api';
 
 interface WorkoutFormProps {
+  latestWeight?: WeightRecord;
   onSubmit: (record: WorkoutRecord) => Promise<{ success: boolean; source: string; error?: string }>;
   onSuccess: () => void;
 }
@@ -35,12 +37,14 @@ const FOCOS_COMUNS = [
   'Outro',
 ];
 
-export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSubmit, onSuccess }) => {
+export const WorkoutForm: React.FC<WorkoutFormProps> = ({ latestWeight, onSubmit, onSuccess }) => {
+  const userWeight = latestWeight?.peso || 111.75;
   const [data, setData] = useState<string>(getTodayBR());
   const [diaSemana, setDiaSemana] = useState<string>(getDayOfWeekBR());
   const [contexto, setContexto] = useState<string>('Academia Fast fit');
   const [focoDivisao, setFocoDivisao] = useState<string>('Peitoral / Tríceps');
-  const [duracaoMin, setDuracaoMin] = useState<string>('60');
+  const [duracaoMin, setDuracaoMin] = useState<string>('55');
+  const [calorias, setCalorias] = useState<string>('356');
   const [exerciciosCargas, setExerciciosCargas] = useState<string>(
     'Supino reto com barra - 3 séries (30kg máquina); Supino inclinado com halteres - 3 séries (15 cada lado máquina); Peck deck - 3 séries (50); Crucifixo na polia - 3 séries (7.5); Tríceps francês - 3 séries; Tríceps corda - 3 séries (17.5); Tríceps testa com halteres - 3 séries'
   );
@@ -55,6 +59,20 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSubmit, onSuccess })
   const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Recalcula gasto calórico automaticamente quando a duração, esforço ou foco muscular mudam
+  const handleAutoEstimateCalories = () => {
+    const dur = parseInt(duracaoMin, 10);
+    const pse = parseInt(esforcoPse, 10) || 8;
+    if (dur > 0) {
+      const est = estimateGymCalories(dur, userWeight, pse, focoDivisao);
+      setCalorias(String(est));
+    }
+  };
+
+  useEffect(() => {
+    handleAutoEstimateCalories();
+  }, [duracaoMin, esforcoPse, focoDivisao]);
 
   useEffect(() => {
     setDiaSemana(getDayOfWeekBR(data));
@@ -150,6 +168,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSubmit, onSuccess })
       duracaoMin: duracaoMin ? parseInt(duracaoMin, 10) : undefined,
       exerciciosCargas,
       esforcoPse: esforcoPse ? parseInt(esforcoPse, 10) : undefined,
+      calorias: calorias ? parseInt(calorias, 10) : undefined,
       observacoes,
     };
 
@@ -299,12 +318,12 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSubmit, onSuccess })
           </div>
         </div>
 
-        {/* Foco / Divisão Muscular & Duração & Esforço (PSE) */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Foco / Divisão Muscular & Duração & Esforço (PSE) & Calorias */}
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-purple-300 mb-1.5 flex items-center gap-1.5">
               <Activity className="w-3.5 h-3.5 text-purple-400" />
-              Foco / Divisão Muscular
+              Foco / Divisão
             </label>
             <input
               type="text"
@@ -320,28 +339,28 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSubmit, onSuccess })
                 <option key={f} value={f} />
               ))}
             </datalist>
-            <p className="text-[10px] text-slate-400 mt-1">Apenas grupos musculares (sem nome de ficha).</p>
+            <p className="text-[10px] text-slate-400 mt-1">Apenas grupos musculares.</p>
           </div>
 
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-purple-400" />
-              Duração em Minutos (Opcional)
+              Duração (min)
             </label>
             <input
               type="number"
               value={duracaoMin}
               onChange={(e) => setDuracaoMin(e.target.value)}
-              placeholder="Ex: 60"
+              placeholder="Ex: 55"
               className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white text-sm focus:border-purple-500 focus:outline-none"
             />
-            <p className="text-[10px] text-slate-400 mt-1">Preenchimento manual opcional.</p>
+            <p className="text-[10px] text-slate-400 mt-1">Tempo total de sessão.</p>
           </div>
 
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center gap-1.5">
               <Gauge className="w-3.5 h-3.5 text-amber-400" />
-              Esforço Percebido (PSE 1 a 10)
+              Esforço (PSE 1-10)
             </label>
             <input
               type="number"
@@ -352,7 +371,22 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSubmit, onSuccess })
               placeholder="Ex: 8"
               className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-amber-300 font-bold text-sm focus:border-purple-500 focus:outline-none"
             />
-            <p className="text-[10px] text-slate-400 mt-1">Escala de 1 (muito leve) a 10 (máximo).</p>
+            <p className="text-[10px] text-slate-400 mt-1">Escala de 1 a 10.</p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-amber-400 mb-1.5 flex items-center gap-1.5">
+              <Flame className="w-3.5 h-3.5 text-amber-400" />
+              Gasto Estimado (kcal)
+            </label>
+            <input
+              type="number"
+              value={calorias}
+              onChange={(e) => setCalorias(e.target.value)}
+              placeholder="Ex: 356"
+              className="w-full bg-slate-900 border border-amber-500/50 rounded-xl px-3.5 py-2.5 text-amber-300 font-black text-sm focus:border-amber-400 focus:outline-none"
+            />
+            <p className="text-[10px] text-slate-400 mt-1">Estimado pelo peso ({userWeight}kg) e PSE.</p>
           </div>
         </div>
 
@@ -430,6 +464,13 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSubmit, onSuccess })
               <div className="flex justify-between">
                 <span className="text-slate-400">Duração / Esforço (PSE):</span>
                 <span className="font-semibold text-white">{duracaoMin ? `${duracaoMin} min` : 'Não informada'} • PSE: {esforcoPse || '-'} / 10</span>
+              </div>
+              <div className="flex justify-between border-t border-slate-800 pt-2">
+                <span className="text-amber-400 font-semibold flex items-center gap-1">
+                  <Flame className="w-3.5 h-3.5" />
+                  Gasto Calórico Estimado:
+                </span>
+                <span className="font-black text-amber-300 text-sm">{calorias || '0'} kcal</span>
               </div>
               <div className="border-t border-slate-800 pt-2">
                 <span className="text-slate-400 block mb-1">Exercícios e Cargas:</span>

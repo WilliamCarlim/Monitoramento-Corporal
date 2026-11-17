@@ -88,9 +88,9 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
         csvContent += `${c.data};${c.diaSemana};${c.contexto};${c.modalidade};${c.local};${formatBRNumber(c.distanciaKm, 2)};${cleanDurationString(c.tempoMovimento)};${c.passos || ''};${c.elevacaoM || ''};${c.calorias || ''};"${c.observacoes || ''}"\r\n`;
       });
     } else if (activeSubTab === 'workouts') {
-      csvContent += 'Data;Dia da Semana;Horario / Contexto;Foco / Divisao Muscular;Duracao (min);Exercicios / Observacoes de Carga;Esforco (PSE);Observacoes\r\n';
+      csvContent += 'Data;Dia da Semana;Horario / Contexto;Foco / Divisao Muscular;Duracao (min);Exercicios / Observacoes de Carga;Esforco (PSE);Gasto Calorico Estimado (kcal);Observacoes\r\n';
       filteredWorkouts.forEach((w) => {
-        csvContent += `${w.data};${w.diaSemana};${w.contexto};${w.focoDivisao};${w.duracaoMin || ''};"${w.exerciciosCargas || ''}";${w.esforcoPse || ''};"${w.observacoes || ''}"\r\n`;
+        csvContent += `${w.data};${w.diaSemana};${w.contexto};${w.focoDivisao};${w.duracaoMin || ''};"${w.exerciciosCargas || ''}";${w.esforcoPse || ''};${w.calorias || ''};"${w.observacoes || ''}"\r\n`;
       });
     } else {
       csvContent += 'Semana;Data;Foto Frente;Foto Lado;Foto Costa;Observacoes\r\n';
@@ -401,6 +401,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
                   <th className="py-3 px-3 text-indigo-400 font-bold">Foco / Divisão Muscular</th>
                   <th className="py-3 px-3">Duração</th>
                   <th className="py-3 px-3">Esforço (PSE)</th>
+                  <th className="py-3 px-3 text-amber-400 font-bold">Gasto Estimado (kcal)</th>
                   <th className="py-3 px-3 text-slate-300 font-semibold">Exercícios / Séries / Cargas</th>
                   <th className="py-3 px-3">Observações</th>
                 </tr>
@@ -408,7 +409,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
               <tbody className="divide-y divide-slate-800 whitespace-nowrap">
                 {filteredWorkouts.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-8 text-center text-slate-500">
+                    <td colSpan={9} className="py-8 text-center text-slate-500">
                       Nenhum treino de musculação registrado ainda.
                     </td>
                   </tr>
@@ -433,6 +434,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
                           </span>
                         ) : '-'}
                       </td>
+                      <td className="py-2.5 px-3 font-black text-amber-300">{w.calorias ? `${w.calorias.toLocaleString('pt-BR')} kcal` : '-'}</td>
                       <td className="py-2.5 px-3 text-xs text-slate-300 max-w-md truncate" title={w.exerciciosCargas}>
                         {w.exerciciosCargas || '-'}
                       </td>

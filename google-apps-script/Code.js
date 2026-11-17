@@ -273,10 +273,10 @@ function organizarAbaTreinos(ss) {
   sheet.getRange('B4:Z4').clearContent();
   sheet.getRange('B8:Z8').clearContent().clearFormat();
 
-  // 2. Cabeçalho oficial na Linha 9
+  // 2. Cabeçalho oficial na Linha 9 (9 colunas incluindo Gasto Calórico)
   const header = [
     'Data', 'Dia da Semana', 'Horário / Contexto', 'Foco / Divisão Muscular',
-    'Duração (min)', 'Exercícios / Observações de Carga', 'Esforço (PSE)', 'Observações'
+    'Duração (min)', 'Exercícios / Observações de Carga', 'Esforço (PSE)', 'Gasto Calórico Estimado (kcal)', 'Observações'
   ];
   sheet.getRange(9, 2, 1, header.length).setValues([header]);
   sheet.getRange(9, 2, 1, header.length).setFontWeight('bold').setBackground('#7c3aed').setFontColor('#ffffff');
@@ -286,9 +286,10 @@ function organizarAbaTreinos(ss) {
   if (!val10 || String(val10).toLowerCase().includes('data')) {
     const row = [
       '16/11/2026', 'segunda-feira', 'Academia Fast fit', 'Peitoral / Tríceps',
-      '60',
+      '55',
       'Supino reto com barra - 3 séries (30kg máquina); Supino inclinado com halteres - 3 séries (15 cada lado máquina); Peck deck - 3 séries (50); Crucifixo na polia - 3 séries (7.5); Tríceps francês - 3 séries; Tríceps corda - 3 séries (17.5); Tríceps testa com halteres - 3 séries',
       '8',
+      '356',
       '7 exercícios executados • Fast fit • Ficha: Abcde w hipertrofi...'
     ];
     sheet.getRange(10, 2, 1, row.length).setValues([row]);
@@ -298,38 +299,61 @@ function organizarAbaTreinos(ss) {
   return sheet;
 }
 
+function estimateGymCaloriesAppsScript(duracaoMin, pesoKg, esforcoPse, focoDivisao) {
+  if (!duracaoMin || duracaoMin <= 0) return 0;
+  if (!pesoKg || pesoKg <= 0) pesoKg = 111.75;
+  let met = 5.2;
+  const pse = Number(esforcoPse) || 8;
+  if (pse <= 5) met = 3.8;
+  else if (pse <= 7) met = 4.8;
+  else if (pse <= 9) met = 5.8;
+  else met = 6.4;
+
+  const foco = String(focoDivisao || '').toLowerCase();
+  if (foco.includes('perna') || foco.includes('quadríceps') || foco.includes('coxa') || foco.includes('glúteo') || foco.includes('costas') || foco.includes('full')) {
+    met += 0.4;
+  }
+  return Math.round(met * pesoKg * (duracaoMin / 60));
+}
+
 function atualizarCardsTreinos(sheet) {
   sheet.getRange('B4:Z4').clearContent();
   sheet.getRange('B8:Z8').clearContent().clearFormat();
 
   const workouts = parseWorkoutSheet(sheet);
   let totalMinutos = 0;
+  let totalCalorias = 0;
   const diasSet = new Set();
   let ultimoFoco = 'Peitoral / Tríceps';
 
   workouts.forEach(w => {
     if (w.data) diasSet.add(w.data);
     totalMinutos += w.duracaoMin || 0;
+    const cal = w.calorias || estimateGymCaloriesAppsScript(w.duracaoMin, 111.75, w.esforcoPse, w.focoDivisao);
+    totalCalorias += cal;
     if (w.focoDivisao) ultimoFoco = w.focoDivisao;
   });
 
   // Títulos na Linha 5
   sheet.getRange(5, 2).setValue('TOTAL DE TREINOS').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
   sheet.getRange(5, 4).setValue('TEMPO TOTAL ACADEMIA').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
-  sheet.getRange(5, 6).setValue('FREQUÊNCIA (DIAS)').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
-  sheet.getRange(5, 8).setValue('ÚLTIMO FOCO MUSCULAR').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
+  sheet.getRange(5, 6).setValue('CALORIAS ESTIMADAS').setFontWeight('bold').setFontSize(9).setFontColor('#7c3aed');
+  sheet.getRange(5, 8).setValue('FREQUÊNCIA (DIAS)').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
+  sheet.getRange(5, 10).setValue('ÚLTIMO FOCO MUSCULAR').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
 
   // Valores na Linha 6
   sheet.getRange(6, 2).setValue(`${workouts.length} treino(s)`).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
   sheet.getRange(6, 4).setValue(`${totalMinutos} min`).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
-  sheet.getRange(6, 6).setValue(`${diasSet.size} dia(s)`).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
-  sheet.getRange(6, 8).setValue(ultimoFoco).setFontWeight('bold').setFontSize(14).setFontColor('#7c3aed');
+  sheet.getRange(6, 6).setValue(`${totalCalorias} kcal`).setFontWeight('bold').setFontSize(14).setFontColor('#7c3aed');
+  sheet.getRange(6, 8).setValue(`${diasSet.size} dia(s)`).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
+  sheet.getRange(6, 10).setValue(ultimoFoco).setFontWeight('bold').setFontSize(14).setFontColor('#7c3aed');
 
   // Subtítulos na Linha 7
   sheet.getRange(7, 2).setValue('Sessões de musculação').setFontSize(8).setFontColor('#64748b');
   sheet.getRange(7, 4).setValue('Duração acumulada').setFontSize(8).setFontColor('#64748b');
-  sheet.getRange(7, 6).setValue('Dias ativos na semana').setFontSize(8).setFontColor('#64748b');
-  sheet.getRange(7, 8).setValue('Grupos musculares').setFontSize(8).setFontColor('#64748b');
+  sheet.getRange(7, 6).setValue('Gasto calórico estimado').setFontSize(8).setFontColor('#7c3aed');
+  sheet.getRange(7, 8).setValue('Dias ativos na semana').setFontSize(8).setFontColor('#64748b');
+  sheet.getRange(7, 10).setValue('Grupos musculares').setFontSize(8).setFontColor('#64748b');
 }
 
 // ==========================================
@@ -486,16 +510,38 @@ function parseWorkoutSheet(sheet) {
     const dataStr = formatDate(row[1]);
     if (!dataStr || String(row[1]).toLowerCase().includes('data')) continue;
 
+    const durMin = parseCleanNumber(row[5]) || undefined;
+    const pse = parseCleanNumber(row[7]) || undefined;
+    const foco = String(row[4] || 'Musculação');
+
+    let calorias = undefined;
+    let obs = String(row[8] || '');
+
+    // Se a Linha tiver 9 colunas e a coluna 8 for numérica
+    if (row[9] !== undefined && String(row[9]).trim() !== '') {
+      calorias = parseCleanNumber(row[8]);
+      obs = String(row[9] || '');
+    } else if (typeof row[8] === 'number' || (!isNaN(parseFloat(row[8])) && String(row[8]).trim() !== '' && !isNaN(row[8]))) {
+      calorias = parseCleanNumber(row[8]);
+      obs = String(row[9] || '');
+    }
+
+    // Se ainda não tiver calorias gravadas, estima automaticamente
+    if (!calorias && durMin) {
+      calorias = estimateGymCaloriesAppsScript(durMin, 111.75, pse || 8, foco);
+    }
+
     records.push({
       id: 't-sheet-' + (r + 1),
       data: dataStr,
       diaSemana: String(row[2] || ''),
       contexto: String(row[3] || ''),
-      focoDivisao: String(row[4] || 'Musculação'),
-      duracaoMin: parseCleanNumber(row[5]) || undefined,
+      focoDivisao: foco,
+      duracaoMin: durMin,
       exerciciosCargas: String(row[6] || ''),
-      esforcoPse: parseCleanNumber(row[7]) || undefined,
-      observacoes: String(row[8] || '')
+      esforcoPse: pse,
+      calorias: calorias,
+      observacoes: obs
     });
   }
 
@@ -667,18 +713,24 @@ function addWorkoutToSheet(sheet, d) {
     }
   }
 
+  const durMin = d.duracaoMin ? Number(d.duracaoMin) : undefined;
+  const pse = d.esforcoPse ? Number(d.esforcoPse) : 8;
+  const cal = d.calorias ? Number(d.calorias) : (durMin ? estimateGymCaloriesAppsScript(durMin, 111.75, pse, d.focoDivisao) : '');
+
   const rowValues = [
     d.data,
     d.diaSemana || '',
     d.contexto || '',
     d.focoDivisao || '',
-    d.duracaoMin ? String(d.duracaoMin) : '',
+    durMin ? String(durMin) : '',
     d.exerciciosCargas || '',
     d.esforcoPse ? String(d.esforcoPse) : '',
+    cal ? String(cal) : '',
     d.observacoes || ''
   ];
 
   sheet.getRange(targetRow, 2, 1, rowValues.length).setValues([rowValues]);
+  atualizarCardsTreinos(sheet);
 }
 
 function addPhotoToSheet(sheet, d) {

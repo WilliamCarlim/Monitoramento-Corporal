@@ -26,7 +26,13 @@ import {
   Bar,
 } from 'recharts';
 import { WeightRecord, MeasureRecord, CardioRecord, WorkoutRecord, PhotoRecord, UserProfile } from '../types';
-import { formatBRNumber, calculateIMC, parseDurationToHours, cleanDurationString } from '../utils/formatters';
+import {
+  formatBRNumber,
+  calculateIMC,
+  parseDurationToHours,
+  cleanDurationString,
+  estimateGymCalories,
+} from '../utils/formatters';
 import { NavTab } from './Navbar';
 
 interface DashboardProps {
@@ -37,6 +43,15 @@ interface DashboardProps {
   photos: PhotoRecord[];
   profile: UserProfile;
   onNavigate: (tab: NavTab) => void;
+}
+
+interface CalorieChartPoint {
+  date: string;
+  cardioKcal: number;
+  workoutKcal: number;
+  totalKcal: number;
+  cardioDetails: string[];
+  workoutDetails: string[];
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -93,10 +108,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   // Musculação stats
   let totalMinWorkout = 0;
+  let totalCaloriasWorkout = 0;
   const uniqueWorkoutDays = new Set<string>();
+
   workouts.forEach((w) => {
     totalMinWorkout += w.duracaoMin || 0;
     if (w.data) uniqueWorkoutDays.add(w.data);
+    const kcal = w.calorias || estimateGymCalories(w.duracaoMin || 55, currentWeight, w.esforcoPse || 8, w.focoDivisao);
+    totalCaloriasWorkout += kcal;
   });
 
   const workoutHours = Math.floor(totalMinWorkout / 60);
@@ -110,7 +129,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const lastWorkoutFocus = workouts.length > 0 ? workouts[workouts.length - 1].focoDivisao : 'Peitoral / Tríceps';
 
-  // Chart data
+  // Chart data: Peso e Bioimpedância
   const chartDataWeights = weights.map((w) => ({
     date: w.data,
     peso: w.peso,
@@ -118,12 +137,57 @@ export const Dashboard: React.FC<DashboardProps> = ({
     musculo: w.massaMuscularPercent,
   }));
 
-  const chartDataCardios = cardios.map((c) => ({
-    date: c.data,
-    distancia: c.distanciaKm || 0,
-    calorias: c.calorias || 0,
-    modalidade: c.modalidade,
-  }));
+  // Chart data: Calorias Unidas e Empilhadas por Data (Cardio + Musculação)
+  const caloriesMap = new Map<string, CalorieChartPoint>();
+
+  cardios.forEach((c) => {
+    if (!c.data) return;
+    const item = caloriesMap.get(c.data) || {
+      date: c.data,
+      cardioKcal: 0,
+      workoutKcal: 0,
+      totalKcal: 0,
+      cardioDetails: [],
+      workoutDetails: [],
+    };
+    const cal = c.calorias || 0;
+    item.cardioKcal += cal;
+    item.cardioDetails.push(
+      `${c.modalidade}${c.distanciaKm ? ` (${formatBRNumber(c.distanciaKm, 2)} km)` : ''}: ${cal} kcal`
+    );
+    caloriesMap.set(c.data, item);
+  });
+
+  workouts.forEach((w) => {
+    if (!w.data) return;
+    const item = caloriesMap.get(w.data) || {
+      date: w.data,
+      cardioKcal: 0,
+      workoutKcal: 0,
+      totalKcal: 0,
+      cardioDetails: [],
+      workoutDetails: [],
+    };
+    const cal = w.calorias || estimateGymCalories(w.duracaoMin || 55, currentWeight, w.esforcoPse || 8, w.focoDivisao);
+    item.workoutKcal += cal;
+    item.workoutDetails.push(
+      `${w.focoDivisao}${w.duracaoMin ? ` (${w.duracaoMin} min)` : ''}: ${cal} kcal`
+    );
+    caloriesMap.set(w.data, item);
+  });
+
+  const chartDataCalories: CalorieChartPoint[] = Array.from(caloriesMap.values())
+    .sort((a, b) => {
+      const [dA, mA, yA] = a.date.split('/').map(Number);
+      const [dB, mB, yB] = b.date.split('/').map(Number);
+      const tA = new Date(yA || 2026, (mA || 1) - 1, dA || 1).getTime();
+      const tB = new Date(yB || 2026, (mB || 1) - 1, dB || 1).getTime();
+      return tA - tB;
+    })
+    .map((pt) => ({
+      ...pt,
+      totalKcal: pt.cardioKcal + pt.workoutKcal,
+    }));
 
   return (
     <div className="space-y-6 pb-20 md:pb-8">
@@ -389,7 +453,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </div>
 
-      {/* Musculação / Academia Fast fit Summary Bar (Aba "Treinos") */}
+      {/* Musculação / Academia Fast fit Summary Bar (Aba "Treinos") com 5 Cards */}
       <div className="bg-slate-850 border border-indigo-500/30 rounded-2xl p-4 sm:p-5 shadow-lg">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-2.5">
@@ -416,7 +480,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </button>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
           <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-700/60">
             <span className="text-xs text-slate-400 block font-medium">Total de Treinos</span>
             <span className="text-lg font-black text-white mt-1 block">{workouts.length}</span>
@@ -429,7 +493,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <span className="text-xs text-slate-400 block font-medium">Frequência (Dias)</span>
             <span className="text-lg font-black text-teal-400 mt-1 block">{uniqueWorkoutDays.size} dia(s)</span>
           </div>
-          <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-700/60">
+          <div className="bg-slate-900/80 p-3 rounded-xl border border-purple-500/40">
+            <span className="text-xs text-purple-400 block font-medium">Calorias Estimadas</span>
+            <span className="text-lg font-black text-purple-300 mt-1 block">
+              {totalCaloriasWorkout.toLocaleString('pt-BR')} kcal
+            </span>
+          </div>
+          <div className="col-span-2 sm:col-span-1 bg-slate-900/80 p-3 rounded-xl border border-slate-700/60">
             <span className="text-xs text-slate-400 block font-medium">Último Foco</span>
             <span className="text-sm font-bold text-white mt-2 block truncate" title={lastWorkoutFocus}>
               {lastWorkoutFocus}
@@ -495,47 +565,126 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </div>
 
-        {/* Chart 2: Cardio Strava & Gasto Calórico */}
+        {/* Chart 2: Gasto Calórico das Duas Atividades (Cardio & Musculação) - Barra Empilhada */}
         <div className="bg-slate-800/60 backdrop-blur border border-slate-700/60 p-5 rounded-2xl shadow-sm">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
             <div>
               <h3 className="text-base font-semibold text-white flex items-center gap-2">
-                <HeartPulse className="w-4 h-4 text-sky-400" />
-                Atividades Aeróbicas & Gasto Calórico (kcal)
+                <Flame className="w-4 h-4 text-amber-400" />
+                Gasto Calórico Diário (Cardio & Musculação)
               </h3>
               <p className="text-xs text-slate-400">
-                Atividades de Cardio registradas no Strava
+                Total diário com atividades separadas na mesma barra empilhada
               </p>
             </div>
-            <button
-              onClick={() => onNavigate('cardio')}
-              className="text-xs text-sky-400 hover:text-sky-300 font-medium flex items-center gap-1 cursor-pointer"
-            >
-              Lançar cardio <ArrowRight className="w-3 h-3" />
-            </button>
+
+            {/* Legenda das Atividades */}
+            <div className="flex items-center gap-2 text-xs">
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-sky-950 text-sky-300 border border-sky-800 text-[11px] font-semibold">
+                <span className="w-2 h-2 rounded-full bg-sky-400 inline-block"></span>
+                Cardio (Strava)
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-purple-950 text-purple-300 border border-purple-800 text-[11px] font-semibold">
+                <span className="w-2 h-2 rounded-full bg-purple-400 inline-block"></span>
+                Musculação
+              </span>
+            </div>
           </div>
 
           <div className="h-64 w-full">
-            {chartDataCardios.length === 0 ? (
+            {chartDataCalories.length === 0 ? (
               <div className="h-full flex items-center justify-center text-slate-500 text-sm">
-                Nenhum treino de cardio registrado ainda.
+                Nenhuma atividade com gasto calórico registrada ainda.
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartDataCardios} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <BarChart data={chartDataCalories} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.5} />
                   <XAxis dataKey="date" stroke="#94a3b8" fontSize={12} tickLine={false} />
-                  <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#0f172a',
-                      borderColor: '#334155',
-                      borderRadius: '0.75rem',
-                      color: '#f8fafc',
-                    }}
-                    formatter={(val: number) => [`${val} kcal`, 'Gasto Calórico']}
+                  <YAxis
+                    stroke="#94a3b8"
+                    fontSize={12}
+                    tickLine={false}
+                    tickFormatter={(val) => `${val} kcal`}
                   />
-                  <Bar dataKey="calorias" fill="#0284c7" radius={[6, 6, 0, 0]} />
+                  <Tooltip
+                    content={({ active, payload, label }) => {
+                      if (active && payload && payload.length) {
+                        const pt: CalorieChartPoint = payload[0]?.payload;
+                        if (!pt) return null;
+                        return (
+                          <div className="bg-slate-900 border border-slate-700 rounded-xl p-3 shadow-2xl text-xs space-y-2 min-w-[210px]">
+                            <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                              <span className="font-bold text-white">{label}</span>
+                              <span className="text-amber-300 font-black text-sm">
+                                {pt.totalKcal.toLocaleString('pt-BR')} kcal
+                              </span>
+                            </div>
+
+                            {pt.cardioKcal > 0 && (
+                              <div className="space-y-0.5">
+                                <div className="flex justify-between text-sky-400 font-bold">
+                                  <span className="flex items-center gap-1.5">
+                                    <span className="w-2 h-2 rounded-full bg-sky-400 inline-block"></span>
+                                    Cardio (Strava):
+                                  </span>
+                                  <span>{pt.cardioKcal.toLocaleString('pt-BR')} kcal</span>
+                                </div>
+                                {pt.cardioDetails.map((det, i) => (
+                                  <p key={i} className="text-[10px] text-slate-400 pl-3.5 truncate">
+                                    {det}
+                                  </p>
+                                ))}
+                              </div>
+                            )}
+
+                            {pt.workoutKcal > 0 && (
+                              <div className="space-y-0.5">
+                                <div className="flex justify-between text-purple-400 font-bold">
+                                  <span className="flex items-center gap-1.5">
+                                    <span className="w-2 h-2 rounded-full bg-purple-400 inline-block"></span>
+                                    Musculação:
+                                  </span>
+                                  <span>{pt.workoutKcal.toLocaleString('pt-BR')} kcal</span>
+                                </div>
+                                {pt.workoutDetails.map((det, i) => (
+                                  <p key={i} className="text-[10px] text-slate-400 pl-3.5 truncate">
+                                    {det}
+                                  </p>
+                                ))}
+                              </div>
+                            )}
+
+                            {pt.cardioKcal > 0 && pt.workoutKcal > 0 && (
+                              <div className="flex justify-between border-t border-slate-800 pt-1 text-slate-300 text-[11px] font-semibold">
+                                <span>Gasto Total do Dia:</span>
+                                <span className="text-amber-300 font-bold">
+                                  {pt.totalKcal.toLocaleString('pt-BR')} kcal
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  {/* Segmento inferior: Cardio (Azul Claro) */}
+                  <Bar
+                    dataKey="cardioKcal"
+                    name="Cardio (Strava)"
+                    stackId="atividades"
+                    fill="#0284c7"
+                    radius={[0, 0, 0, 0]}
+                  />
+                  {/* Segmento superior: Musculação (Roxo / Púrpura) */}
+                  <Bar
+                    dataKey="workoutKcal"
+                    name="Musculação"
+                    stackId="atividades"
+                    fill="#a855f7"
+                    radius={[6, 6, 0, 0]}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             )}

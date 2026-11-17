@@ -229,6 +229,7 @@ export const App: React.FC = () => {
 
             {activeTab === 'workout' && (
               <WorkoutForm
+                latestWeight={weights[weights.length - 1]}
                 onSubmit={handleWorkoutSubmit}
                 onSuccess={() => setActiveTab('dashboard')}
               />

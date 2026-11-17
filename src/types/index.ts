@@ -68,6 +68,7 @@ export interface WorkoutRecord {
   duracaoMin?: number; // Duração em minutos (opcional/manual)
   exerciciosCargas: string; // Exercícios / Observações de Carga
   esforcoPse?: number; // Percepção Subjetiva de Esforço 1 a 10 (opcional)
+  calorias?: number; // Gasto Calórico Estimado (kcal)
   observacoes?: string; // Ficha/rotina, número de exercícios, etc.
 }
 

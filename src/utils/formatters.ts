@@ -169,3 +169,45 @@ export function estimateWorkoutCalories(
 
   return Math.round(kcal);
 }
+
+// Estima o gasto calórico para Musculação / Academia considerando duração, peso corporal, PSE e divisão muscular
+export function estimateGymCalories(
+  duracaoMin: number,
+  pesoKg: number,
+  esforcoPse = 8,
+  focoDivisao = ''
+): number {
+  if (!duracaoMin || duracaoMin <= 0) return 0;
+  if (!pesoKg || pesoKg <= 0) pesoKg = 111.75;
+
+  // Base MET para musculação / treino resistido ajustado pela Percepção Subjetiva de Esforço (PSE)
+  // PSE 1-5 (leve/recuperação): MET 3.8
+  // PSE 6-7 (moderado): MET 4.8
+  // PSE 8-9 (intenso / hipertrofia pesada): MET 5.8
+  // PSE 10 (máxima intensidade): MET 6.4
+  let met = 5.2;
+  if (esforcoPse <= 5) met = 3.8;
+  else if (esforcoPse <= 7) met = 4.8;
+  else if (esforcoPse <= 9) met = 5.8;
+  else met = 6.4;
+
+  // Grandes grupos musculares aumentam a demanda metabólica (pernas, costas, full body)
+  const foco = (focoDivisao || '').toLowerCase();
+  if (
+    foco.includes('perna') ||
+    foco.includes('quadríceps') ||
+    foco.includes('quadriceps') ||
+    foco.includes('coxa') ||
+    foco.includes('glúteo') ||
+    foco.includes('gluteo') ||
+    foco.includes('costas') ||
+    foco.includes('full')
+  ) {
+    met += 0.4;
+  }
+
+  const hours = duracaoMin / 60;
+  const kcal = met * pesoKg * hours;
+
+  return Math.round(kcal);
+}

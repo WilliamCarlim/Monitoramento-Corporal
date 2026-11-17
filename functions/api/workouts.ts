@@ -7,9 +7,10 @@ const BASELINE_WORKOUTS = [
     diaSemana: 'segunda-feira',
     contexto: 'Academia Fast fit',
     focoDivisao: 'Peitoral / Tríceps',
-    duracaoMin: 60,
+    duracaoMin: 55,
     exerciciosCargas: 'Supino reto com barra - 3 séries (30kg máquina); Supino inclinado com halteres - 3 séries (15 cada lado máquina); Peck deck - 3 séries (50); Crucifixo na polia - 3 séries (7.5); Tríceps francês - 3 séries; Tríceps corda - 3 séries (17.5); Tríceps testa com halteres - 3 séries',
     esforcoPse: 8,
+    calorias: 356,
     observacoes: '7 exercícios executados • Fast fit • Ficha: Abcde w hipertrofi...',
   },
 ];

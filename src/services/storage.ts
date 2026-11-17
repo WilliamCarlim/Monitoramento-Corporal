@@ -1,4 +1,5 @@
 import { WeightRecord, MeasureRecord, WorkoutRecord, PhotoRecord, UserProfile } from '../types';
+import { cleanDurationString } from '../utils/formatters';
 
 export const INITIAL_USER_PROFILE: UserProfile = {
   nome: 'Usuário',
@@ -158,7 +159,11 @@ export function getStoredWorkouts(): WorkoutRecord[] {
       saveStoredWorkouts(INITIAL_WORKOUT_RECORDS);
       return INITIAL_WORKOUT_RECORDS;
     }
-    return JSON.parse(raw);
+    const list: WorkoutRecord[] = JSON.parse(raw);
+    return list.map((w) => ({
+      ...w,
+      tempoMovimento: cleanDurationString(w.tempoMovimento),
+    }));
   } catch {
     return INITIAL_WORKOUT_RECORDS;
   }

@@ -91,10 +91,29 @@ export function calculateIMC(pesoKg: number, alturaMetros: number): { imc: numbe
   };
 }
 
+// Limpa strings de duração que possam vir como Date (ex: "Sat Dec 30 1899 00:58:43 GMT...")
+export function cleanDurationString(val: any): string {
+  if (!val) return '00:00:00';
+  const str = String(val).trim();
+  const match = str.match(/(\d{1,2}):(\d{2}):(\d{2})/);
+  if (match) {
+    const h = match[1].padStart(2, '0');
+    const m = match[2];
+    const s = match[3];
+    return `${h}:${m}:${s}`;
+  }
+  const matchMinSec = str.match(/(\d{1,2}):(\d{2})/);
+  if (matchMinSec) {
+    return `00:${matchMinSec[1].padStart(2, '0')}:${matchMinSec[2]}`;
+  }
+  return str;
+}
+
 // Convert "00:58:43" or "58:43" or "1h 10m" to decimal hours
 export function parseDurationToHours(durationStr: string): number {
   if (!durationStr) return 0;
-  const parts = durationStr.split(':').map(Number);
+  const cleaned = cleanDurationString(durationStr);
+  const parts = cleaned.split(':').map(Number);
   if (parts.length === 3) {
     const [h, m, s] = parts;
     return (h || 0) + (m || 0) / 60 + (s || 0) / 3600;
@@ -103,7 +122,7 @@ export function parseDurationToHours(durationStr: string): number {
     const [m, s] = parts;
     return (m || 0) / 60 + (s || 0) / 3600;
   }
-  const num = parseFloat(durationStr.replace(',', '.'));
+  const num = parseFloat(cleaned.replace(',', '.'));
   return isNaN(num) ? 0 : num / 60; // assume minutes if raw number
 }
 

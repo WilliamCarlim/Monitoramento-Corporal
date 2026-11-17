@@ -17,6 +17,16 @@ const BASELINE_WORKOUTS = [
   },
 ];
 
+function cleanDuration(val: any): string {
+  if (!val) return '00:00:00';
+  const str = String(val).trim();
+  const match = str.match(/(\d{1,2}):(\d{2}):(\d{2})/);
+  if (match) return `${match[1].padStart(2, '0')}:${match[2]}:${match[3]}`;
+  const match2 = str.match(/(\d{1,2}):(\d{2})/);
+  if (match2) return `00:${match2[1].padStart(2, '0')}:${match2[2]}`;
+  return str;
+}
+
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   const { env } = context;
 
@@ -28,7 +38,11 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       if (res.ok) {
         const json: any = await res.json();
         if (json.status === 'success' && Array.isArray(json.data)) {
-          return new Response(JSON.stringify(json.data), {
+          const cleaned = json.data.map((item: any) => ({
+            ...item,
+            tempoMovimento: cleanDuration(item.tempoMovimento),
+          }));
+          return new Response(JSON.stringify(cleaned), {
             headers: { 'Content-Type': 'application/json' },
           });
         }

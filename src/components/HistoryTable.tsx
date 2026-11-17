@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Scale, Ruler, Dumbbell, Camera, Search, ExternalLink, Download } from 'lucide-react';
 import { WeightRecord, MeasureRecord, WorkoutRecord, PhotoRecord } from '../types';
-import { formatBRNumber } from '../utils/formatters';
+import { formatBRNumber, cleanDurationString } from '../utils/formatters';
 import { SPREADSHEET_ID } from '../services/api';
 
 interface HistoryTableProps {
@@ -73,7 +73,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
     } else if (activeSubTab === 'workouts') {
       csvContent += 'Data;Dia da Semana;Horario / Contexto;Modalidade;Local / Origem;Distancia (km);Tempo de Movimentacao;Passos;Elevacao (m);Gasto Calorico Estimado (kcal);Observacoes\r\n';
       filteredWorkouts.forEach((w) => {
-        csvContent += `${w.data};${w.diaSemana};${w.contexto};${w.modalidade};${w.local};${formatBRNumber(w.distanciaKm, 2)};${w.tempoMovimento};${w.passos || ''};${w.elevacaoM || ''};${w.calorias || ''};"${w.observacoes || ''}"\r\n`;
+        csvContent += `${w.data};${w.diaSemana};${w.contexto};${w.modalidade};${w.local};${formatBRNumber(w.distanciaKm, 2)};${cleanDurationString(w.tempoMovimento)};${w.passos || ''};${w.elevacaoM || ''};${w.calorias || ''};"${w.observacoes || ''}"\r\n`;
       });
     } else {
       csvContent += 'Semana;Data;Foto Frente;Foto Lado;Foto Costa;Observacoes\r\n';
@@ -346,7 +346,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
                       </td>
                       <td className="py-2.5 px-3 text-slate-400">{w.local}</td>
                       <td className="py-2.5 px-3 font-bold text-sky-300">{formatBRNumber(w.distanciaKm, 2)} km</td>
-                      <td className="py-2.5 px-3 font-mono">{w.tempoMovimento}</td>
+                      <td className="py-2.5 px-3 font-mono">{cleanDurationString(w.tempoMovimento)}</td>
                       <td className="py-2.5 px-3">{w.passos ? w.passos.toLocaleString('pt-BR') : '-'}</td>
                       <td className="py-2.5 px-3">{w.elevacaoM ? `${w.elevacaoM} m` : '-'}</td>
                       <td className="py-2.5 px-3 font-black text-amber-300">{w.calorias ? `${w.calorias.toLocaleString('pt-BR')} kcal` : '-'}</td>

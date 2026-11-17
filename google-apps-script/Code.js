@@ -385,7 +385,7 @@ function parseWorkoutSheet(sheet) {
       modalidade: String(row[4] || 'Caminhada'),
       local: String(row[5] || ''),
       distanciaKm: parseCleanNumber(row[6]),
-      tempoMovimento: String(row[7] || ''),
+      tempoMovimento: formatDurationTime(row[7]),
       passos: parseCleanNumber(row[8]),
       elevacaoM: parseCleanNumber(row[9]),
       calorias: parseCleanNumber(row[10]),
@@ -709,6 +709,26 @@ function parseCleanNumber(val) {
   const clean = String(val).replace(/\s+/g, '').replace('kg', '').replace('cm', '').replace('%', '').replace(/\./g, '').replace(',', '.');
   const parsed = parseFloat(clean);
   return isNaN(parsed) ? 0 : parsed;
+}
+
+function formatDurationTime(val) {
+  if (!val) return '00:00:00';
+  if (val instanceof Date) {
+    const h = String(val.getHours()).padStart(2, '0');
+    const m = String(val.getMinutes()).padStart(2, '0');
+    const s = String(val.getSeconds()).padStart(2, '0');
+    return `${h}:${m}:${s}`;
+  }
+  const str = String(val).trim();
+  const match = str.match(/(\d{1,2}):(\d{2}):(\d{2})/);
+  if (match) {
+    return `${match[1].padStart(2, '0')}:${match[2]}:${match[3]}`;
+  }
+  const match2 = str.match(/(\d{1,2}):(\d{2})/);
+  if (match2) {
+    return `00:${match2[1].padStart(2, '0')}:${match2[2]}`;
+  }
+  return str;
 }
 
 function formatDate(val) {

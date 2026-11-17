@@ -28,7 +28,7 @@ import {
   Bar,
 } from 'recharts';
 import { WeightRecord, MeasureRecord, WorkoutRecord, PhotoRecord, UserProfile } from '../types';
-import { formatBRNumber, calculateIMC } from '../utils/formatters';
+import { formatBRNumber, calculateIMC, parseDurationToHours, cleanDurationString } from '../utils/formatters';
 import { NavTab } from './Navbar';
 
 interface DashboardProps {
@@ -71,11 +71,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
   let totalKm = 0;
   let totalPassos = 0;
   let totalCalorias = 0;
+  let totalSeconds = 0;
   workouts.forEach((w) => {
     totalKm += w.distanciaKm || 0;
     totalPassos += w.passos || 0;
     totalCalorias += w.calorias || 0;
+    const durHours = parseDurationToHours(w.tempoMovimento);
+    totalSeconds += Math.round(durHours * 3600);
   });
+
+  const totalH = Math.floor(totalSeconds / 3600);
+  const totalM = Math.floor((totalSeconds % 3600) / 60);
+  const totalS = totalSeconds % 60;
+  const formattedTotalTime = totalSeconds > 0
+    ? `${String(totalH).padStart(2, '0')}:${String(totalM).padStart(2, '0')}:${String(totalS).padStart(2, '0')}`
+    : (workouts[0]?.tempoMovimento ? cleanDurationString(workouts[0].tempoMovimento) : '00:58:43');
 
   // Chart data
   const chartDataWeights = weights.map((w) => ({
@@ -339,7 +349,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-700/60">
             <span className="text-xs text-slate-400 block font-medium">Tempo Total</span>
             <span className="text-lg font-black text-white mt-1 block">
-              {workouts[0]?.tempoMovimento || '00:58:43'}
+              {formattedTotalTime}
             </span>
           </div>
           <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-700/60">

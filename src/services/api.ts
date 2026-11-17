@@ -1,4 +1,5 @@
 import { WeightRecord, MeasureRecord, WorkoutRecord, PhotoRecord, AssistantMessage } from '../types';
+import { cleanDurationString } from '../utils/formatters';
 import {
   getStoredWeights,
   saveStoredWeights,
@@ -97,11 +98,16 @@ function sanitizeMeasures(list: any[]): MeasureRecord[] {
 
 function sanitizeWorkouts(list: any[]): WorkoutRecord[] {
   if (!Array.isArray(list)) return [];
-  return list.filter((w) => {
-    if (!w || !w.data) return false;
-    const dataStr = String(w.data).trim().toLowerCase();
-    return dataStr !== 'data' && (w.distanciaKm > 0 || w.calorias > 0 || (w.tempoMovimento && w.tempoMovimento !== ''));
-  });
+  return list
+    .filter((w) => {
+      if (!w || !w.data) return false;
+      const dataStr = String(w.data).trim().toLowerCase();
+      return dataStr !== 'data' && (w.distanciaKm > 0 || w.calorias > 0 || (w.tempoMovimento && w.tempoMovimento !== ''));
+    })
+    .map((w) => ({
+      ...w,
+      tempoMovimento: cleanDurationString(w.tempoMovimento),
+    }));
 }
 
 function sanitizePhotos(list: any[]): PhotoRecord[] {

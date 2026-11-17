@@ -1,23 +1,27 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Sparkles, Send, Bot, User, Trash2, HelpCircle, Loader2 } from 'lucide-react';
-import { AssistantMessage, WeightRecord, MeasureRecord } from '../types';
+import { AssistantMessage, WeightRecord, MeasureRecord, WorkoutRecord, PhotoRecord } from '../types';
 import { askGemini } from '../services/api';
 
 interface GeminiAssistantProps {
   weights: WeightRecord[];
   measures: MeasureRecord[];
+  workouts?: WorkoutRecord[];
+  photos?: PhotoRecord[];
 }
 
 const QUICK_PROMPTS = [
   'Analisar minha evolução geral e próximos focos',
   'Explicar oscilação de peso pós-treino e almoço',
   'Interpretar medida de abdômen de 127cm com trena vs fita métrica',
+  'Analisar meu último treino do Strava e gasto calórico',
   'Qual o protocolo ideal de pesagem e medidas para os próximos dias?',
 ];
 
-export const GeminiAssistant: React.FC<GeminiAssistantProps> = ({ weights, measures }) => {
+export const GeminiAssistant: React.FC<GeminiAssistantProps> = ({ weights, measures, workouts = [], photos = [] }) => {
   const latestWeight = weights.length > 0 ? weights[weights.length - 1] : null;
   const latestAbdomen = [...measures].reverse().find(m => m.abdomen)?.abdomen || 127;
+  const latestWorkout = workouts.length > 0 ? workouts[workouts.length - 1] : null;
 
   const [messages, setMessages] = useState<AssistantMessage[]>([
     {
@@ -25,10 +29,12 @@ export const GeminiAssistant: React.FC<GeminiAssistantProps> = ({ weights, measu
       role: 'assistant',
       content: `Olá! Sou seu **Assistente de Acompanhamento Corporal com Inteligência Artificial** (Gemini).
 
-Tenho acesso em tempo real aos seus registros da planilha:
+Tenho acesso em tempo real aos seus registros das 4 abas da planilha:
 * **Peso Inicial / Atual:** ${latestWeight ? `${latestWeight.peso} kg (${latestWeight.data} - ${latestWeight.contexto})` : '113,250 kg'}
+* **Bioimpedância:** Gordura ${latestWeight?.gorduraPercent || 35.2}% | Massa Muscular ${latestWeight?.massaMuscularPercent || 62.1}% | Visceral ${latestWeight?.gorduraVisceral || 26.0}
 * **Medida de Abdômen:** ${latestAbdomen} cm
-* **Altura de Referência:** 1,80 m (IMC ~34,95)
+* **Treinos:** ${latestWorkout ? `${latestWorkout.modalidade} (${latestWorkout.distanciaKm} km, ${latestWorkout.calorias} kcal)` : 'Nenhum treino registrado ainda'}
+* **Fotos Semanais:** ${photos.length} registro(s)
 
 Como posso ajudar você hoje? Você pode escolher uma das perguntas rápidas abaixo ou digitar sua dúvida.`,
       timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),

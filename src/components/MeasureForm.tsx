@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Ruler, Calendar, FileText, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Ruler, Calendar, FileText, CheckCircle2, AlertCircle, Sparkles, Camera, Upload, Loader2 } from 'lucide-react';
 import { MeasureRecord } from '../types';
 import { getTodayBR, parseBRNumber } from '../utils/formatters';
+import { extractFromPrint } from '../services/api';
 
 interface MeasureFormProps {
   onSubmit: (record: MeasureRecord) => Promise<{ success: boolean; source: string; error?: string }>;
@@ -12,7 +13,7 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({ onSubmit, onSuccess })
   const [data, setData] = useState<string>(getTodayBR());
 
   // Core / Tronco
-  const [abdomen, setAbdomen] = useState<string>('');
+  const [abdomen, setAbdomen] = useState<string>('127');
   const [cintura, setCintura] = useState<string>('');
   const [quadril, setQuadril] = useState<string>('');
   const [torax, setTorax] = useState<string>('');
@@ -37,12 +38,70 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({ onSubmit, onSuccess })
   const [observacoes, setObservacoes] = useState<string>('');
 
   const [loading, setLoading] = useState<boolean>(false);
+  const [ocrLoading, setOcrLoading] = useState<boolean>(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageFile = async (file: File) => {
+    setOcrLoading(true);
+    setFeedback(null);
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64 = reader.result as string;
+        const res = await extractFromPrint(base64, 'measure');
+        if (res.success && res.data) {
+          const d = res.data;
+          if (d.data) setData(d.data);
+          if (d.abdomen) setAbdomen(String(d.abdomen));
+          if (d.cintura) setCintura(String(d.cintura));
+          if (d.quadril) setQuadril(String(d.quadril));
+          if (d.torax) setTorax(String(d.torax));
+          if (d.pescoco) setPescoco(String(d.pescoco));
+          if (d.ombro) setOmbro(String(d.ombro));
+          if (d.bracoDir) setBracoDir(String(d.bracoDir));
+          if (d.bracoEsq) setBracoEsq(String(d.bracoEsq));
+          if (d.antebracoDir) setAntebracoDir(String(d.antebracoDir));
+          if (d.antebracoEsq) setAntebracoEsq(String(d.antebracoEsq));
+          if (d.coxaDir) setCoxaDir(String(d.coxaDir));
+          if (d.coxaEsq) setCoxaEsq(String(d.coxaEsq));
+          if (d.panturrilhaDir) setPanturrilhaDir(String(d.panturrilhaDir));
+          if (d.panturrilhaEsq) setPanturrilhaEsq(String(d.panturrilhaEsq));
+          if (d.observacoes) setObservacoes(d.observacoes);
+
+          setFeedback({
+            type: 'success',
+            message: '✨ Medidas corporais extraídas com sucesso via Gemini Vision!',
+          });
+        } else {
+          setFeedback({
+            type: 'error',
+            message: res.error || 'Não foi possível ler as medidas da imagem.',
+          });
+        }
+        setOcrLoading(false);
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      setOcrLoading(false);
+      setFeedback({ type: 'error', message: 'Erro ao ler arquivo de imagem.' });
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile();
+        if (file) handleImageFile(file);
+      }
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Check if at least one measurement is filled
     const pAbdomen = parseBRNumber(abdomen);
     const pCintura = parseBRNumber(cintura);
     const pQuadril = parseBRNumber(quadril);
@@ -105,29 +164,21 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({ onSubmit, onSuccess })
       if (result.success) {
         setFeedback({
           type: 'success',
-          message: `Medidas registradas com sucesso na aba Medidas Corporais! (${result.source === 'cloud' ? 'Google Sheets' : 'Local'})`,
+          message: `Medidas registradas com sucesso na aba Medidas Corporais!`,
         });
-        setTimeout(() => {
-          onSuccess();
-        }, 1200);
+        setTimeout(() => onSuccess(), 1000);
       } else {
-        setFeedback({
-          type: 'error',
-          message: result.error || 'Erro ao registrar medidas.',
-        });
+        setFeedback({ type: 'error', message: result.error || 'Erro ao registrar medidas.' });
       }
     } catch (err: any) {
-      setFeedback({
-        type: 'error',
-        message: err?.message || 'Falha ao conectar com o serviço.',
-      });
+      setFeedback({ type: 'error', message: err.message || 'Falha ao salvar.' });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 pb-20 md:pb-8">
+    <div className="max-w-4xl mx-auto space-y-6 pb-20 md:pb-8" onPaste={handlePaste}>
       {/* Header */}
       <div>
         <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
@@ -137,6 +188,57 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({ onSubmit, onSuccess })
         <p className="text-slate-400 text-sm mt-1">
           Grave circunferências na aba <code className="text-cyan-300">Medidas Corporais</code> da planilha em cm.
         </p>
+      </div>
+
+      {/* OCR Banner */}
+      <div className="bg-gradient-to-r from-cyan-950/40 via-slate-900 to-sky-950/40 border border-cyan-500/40 rounded-2xl p-5 shadow-lg">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 flex items-center justify-center flex-shrink-0">
+              <Camera className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                Leitura Automática de Print / Anotação (Gemini Vision)
+              </h3>
+              <p className="text-xs text-slate-300 mt-0.5">
+                Cole o print com <strong>Ctrl + V</strong> ou selecione imagem com anotações de medidas corporais.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files && e.target.files[0]) {
+                  handleImageFile(e.target.files[0]);
+                }
+              }}
+            />
+            <button
+              type="button"
+              disabled={ocrLoading}
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full sm:w-auto px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-md cursor-pointer"
+            >
+              {ocrLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-white" />
+                  <span>Extraindo Medidas...</span>
+                </>
+              ) : (
+                <>
+                  <Upload className="w-4 h-4" />
+                  <span>Carregar Print</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
       </div>
 
       {feedback && (
@@ -157,7 +259,6 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({ onSubmit, onSuccess })
       )}
 
       <form onSubmit={handleSubmit} className="bg-slate-800/60 backdrop-blur border border-slate-700/60 rounded-2xl p-6 space-y-6 shadow-xl">
-        {/* Data */}
         <div className="max-w-xs">
           <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center gap-1.5">
             <Calendar className="w-3.5 h-3.5 text-cyan-400" />
@@ -167,16 +268,16 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({ onSubmit, onSuccess })
             type="text"
             value={data}
             onChange={(e) => setData(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm font-medium"
+            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white font-medium text-sm"
             required
           />
         </div>
 
-        {/* Section 1: Core & Tronco */}
+        {/* Core & Tronco */}
         <div className="border border-cyan-500/20 bg-cyan-950/10 rounded-xl p-4 space-y-3">
           <h3 className="text-sm font-bold text-cyan-400 uppercase tracking-wide flex items-center gap-2">
             <Sparkles className="w-4 h-4" />
-            1. Core & Tronco (Principais)
+            1. Core & Tronco (Circunferências Principais)
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div>
@@ -185,53 +286,46 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({ onSubmit, onSuccess })
               </label>
               <input
                 type="text"
-                inputMode="decimal"
                 value={abdomen}
                 onChange={(e) => setAbdomen(e.target.value)}
-                placeholder="Ex: 127"
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white font-semibold focus:ring-2 focus:ring-cyan-500 text-sm"
+                placeholder="127"
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white font-bold text-sm"
               />
             </div>
-
             <div>
               <label className="block text-xs text-slate-300 mb-1">Cintura (cm)</label>
               <input
                 type="text"
-                inputMode="decimal"
                 value={cintura}
                 onChange={(e) => setCintura(e.target.value)}
-                placeholder="Ex: 120"
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white font-semibold focus:ring-2 focus:ring-cyan-500 text-sm"
+                placeholder="cm"
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white font-semibold text-sm"
               />
             </div>
-
             <div>
               <label className="block text-xs text-slate-300 mb-1">Quadril (cm)</label>
               <input
                 type="text"
-                inputMode="decimal"
                 value={quadril}
                 onChange={(e) => setQuadril(e.target.value)}
-                placeholder="Ex: 115"
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white font-semibold focus:ring-2 focus:ring-cyan-500 text-sm"
+                placeholder="cm"
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white font-semibold text-sm"
               />
             </div>
-
             <div>
               <label className="block text-xs text-slate-300 mb-1">Tórax (cm)</label>
               <input
                 type="text"
-                inputMode="decimal"
                 value={torax}
                 onChange={(e) => setTorax(e.target.value)}
-                placeholder="Ex: 118"
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white font-semibold focus:ring-2 focus:ring-cyan-500 text-sm"
+                placeholder="cm"
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white font-semibold text-sm"
               />
             </div>
           </div>
         </div>
 
-        {/* Section 2: Membros Superiores */}
+        {/* Membros Superiores */}
         <div className="border border-slate-700/60 bg-slate-900/30 rounded-xl p-4 space-y-3">
           <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wide">
             2. Membros Superiores & Pescoço
@@ -239,79 +333,32 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({ onSubmit, onSuccess })
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
             <div>
               <label className="block text-xs text-slate-400 mb-1">Pescoço (cm)</label>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={pescoco}
-                onChange={(e) => setPescoco(e.target.value)}
-                placeholder="cm"
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-cyan-500"
-              />
+              <input type="text" value={pescoco} onChange={(e) => setPescoco(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm" />
             </div>
-
             <div>
               <label className="block text-xs text-slate-400 mb-1">Ombro (cm)</label>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={ombro}
-                onChange={(e) => setOmbro(e.target.value)}
-                placeholder="cm"
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-cyan-500"
-              />
+              <input type="text" value={ombro} onChange={(e) => setOmbro(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm" />
             </div>
-
             <div>
               <label className="block text-xs text-slate-400 mb-1">Braço Dir (cm)</label>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={bracoDir}
-                onChange={(e) => setBracoDir(e.target.value)}
-                placeholder="cm"
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-cyan-500"
-              />
+              <input type="text" value={bracoDir} onChange={(e) => setBracoDir(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm" />
             </div>
-
             <div>
               <label className="block text-xs text-slate-400 mb-1">Braço Esq (cm)</label>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={bracoEsq}
-                onChange={(e) => setBracoEsq(e.target.value)}
-                placeholder="cm"
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-cyan-500"
-              />
+              <input type="text" value={bracoEsq} onChange={(e) => setBracoEsq(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm" />
             </div>
-
             <div>
               <label className="block text-xs text-slate-400 mb-1">Antebraço D</label>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={antebracoDir}
-                onChange={(e) => setAntebracoDir(e.target.value)}
-                placeholder="cm"
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-cyan-500"
-              />
+              <input type="text" value={antebracoDir} onChange={(e) => setAntebracoDir(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm" />
             </div>
-
             <div>
               <label className="block text-xs text-slate-400 mb-1">Antebraço E</label>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={antebracoEsq}
-                onChange={(e) => setAntebracoEsq(e.target.value)}
-                placeholder="cm"
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-cyan-500"
-              />
+              <input type="text" value={antebracoEsq} onChange={(e) => setAntebracoEsq(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm" />
             </div>
           </div>
         </div>
 
-        {/* Section 3: Membros Inferiores */}
+        {/* Membros Inferiores */}
         <div className="border border-slate-700/60 bg-slate-900/30 rounded-xl p-4 space-y-3">
           <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wide">
             3. Membros Inferiores
@@ -319,55 +366,24 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({ onSubmit, onSuccess })
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div>
               <label className="block text-xs text-slate-400 mb-1">Coxa Dir (cm)</label>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={coxaDir}
-                onChange={(e) => setCoxaDir(e.target.value)}
-                placeholder="cm"
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-cyan-500"
-              />
+              <input type="text" value={coxaDir} onChange={(e) => setCoxaDir(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm" />
             </div>
-
             <div>
               <label className="block text-xs text-slate-400 mb-1">Coxa Esq (cm)</label>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={coxaEsq}
-                onChange={(e) => setCoxaEsq(e.target.value)}
-                placeholder="cm"
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-cyan-500"
-              />
+              <input type="text" value={coxaEsq} onChange={(e) => setCoxaEsq(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm" />
             </div>
-
             <div>
               <label className="block text-xs text-slate-400 mb-1">Panturrilha Dir</label>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={panturrilhaDir}
-                onChange={(e) => setPanturrilhaDir(e.target.value)}
-                placeholder="cm"
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-cyan-500"
-              />
+              <input type="text" value={panturrilhaDir} onChange={(e) => setPanturrilhaDir(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm" />
             </div>
-
             <div>
               <label className="block text-xs text-slate-400 mb-1">Panturrilha Esq</label>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={panturrilhaEsq}
-                onChange={(e) => setPanturrilhaEsq(e.target.value)}
-                placeholder="cm"
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-cyan-500"
-              />
+              <input type="text" value={panturrilhaEsq} onChange={(e) => setPanturrilhaEsq(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm" />
             </div>
           </div>
         </div>
 
-        {/* Section 4: Instrumento e Contexto de Medição */}
+        {/* Instrumento e Observações */}
         <div className="space-y-4 pt-2">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -404,13 +420,13 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({ onSubmit, onSuccess })
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center gap-1.5">
               <FileText className="w-3.5 h-3.5 text-slate-400" />
-              Observações Específicas
+              Observações
             </label>
             <input
               type="text"
               value={observacoes}
               onChange={(e) => setObservacoes(e.target.value)}
-              placeholder="Ex: Medição feita pela manhã em jejum, fita bem ajustada sem apertar..."
+              placeholder="Ex: medição preliminar com trena na altura do umbigo, soltando o ar até ficar sem fôlego; aguardando fita métrica"
               className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white text-sm"
             />
           </div>
@@ -424,8 +440,8 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({ onSubmit, onSuccess })
         >
           {loading ? (
             <span className="flex items-center gap-2">
-              <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-              Enviando para a Planilha...
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Salvando Medidas...
             </span>
           ) : (
             <>

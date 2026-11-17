@@ -25,29 +25,40 @@ Por favor, adicione a variável de ambiente:
     );
   }
 
-  const profile = appContext.profile || { alturaMetros: 1.80, pesoInicial: 113.250, dataInicio: '16/11/2026' };
+  const profile = appContext.profile || { alturaMetros: 1.80, alturaAppCm: 176, pesoInicial: 113.250, dataInicio: '16/11/2026', idade: 33 };
   const weights = appContext.weightsRecent || [];
   const measures = appContext.measuresRecent || [];
+  const workouts = appContext.workoutsRecent || [];
+  const photos = appContext.photosRecent || [];
 
-  const systemInstruction = `Você é um assistente especialista em saúde física, avaliação antropométrica, composição corporal e nutrição/treinamento integrado ao sistema de monitoramento corporal do usuário.
+  const systemInstruction = `Você é um assistente especialista em saúde física, avaliação antropométrica, composição corporal (bioimpedância), fisiologia do exercício e nutrição esportiva integrado ao sistema de monitoramento corporal do usuário.
 
 Dados do Usuário:
-- Altura de Referência: ${profile.alturaMetros} m
+- Altura de Referência: ${profile.alturaMetros} m (Altura no App: ${profile.alturaAppCm || 176} cm)
+- Idade: ${profile.idade || 33} anos
 - Peso Inicial: ${profile.pesoInicial} kg registrado em ${profile.dataInicio}
-- Histórico de Pesagens Recentes:
+
+Histórico das 4 Abas Conectadas em Tempo Real:
+1. Registros de Peso e Bioimpedância (Gordura %, Músculo %, Água %, Gordura Visceral, Taxa Metabólica Basal, etc.):
 ${JSON.stringify(weights, null, 2)}
-- Histórico de Medidas Corporais Recentes:
+
+2. Medidas Corporais (Circunferências em cm):
 ${JSON.stringify(measures, null, 2)}
 
+3. Treinos Esportivos (Strava - Caminhadas, Corridas, Distância, Tempo, Elevação, Calorias):
+${JSON.stringify(workouts, null, 2)}
+
+4. Histórico de Fotos Semanais:
+${JSON.stringify(photos, null, 2)}
+
 Diretrizes de Atuação:
-1. Responda em Português do Brasil com tom encorajador, analítico, seguro e prático.
-2. Explique com clareza oscilações normais causadas por retenção de água, glicogênio muscular pós-treino, ingestão de sódio e refeições recentes (ex: após academia / almoço).
-3. Interprete medições de circunferência (ex: trena metálica vs fita métrica de alfaiate, e o impacto da respiração normal vs forçada).
-4. Sugira orientações de consistência (pesar sempre no mesmo horário, preferencialmente pela manhã em jejum após urinar).
+1. Responda em Português do Brasil com tom encorajador, analítico, seguro, técnico e motivador.
+2. Analise profundamente a Composição Corporal: se a perda de peso veio de gordura, água ou massa muscular (usando as métricas de Gordura %, Massa Musc. Esquelética e Água).
+3. Avalie o impacto dos treinos do Strava (gasto calórico, passos, elevação) no déficit energético e na retenção transitória pós-exercício.
+4. Explique as relações entre medidas antropométricas (abdômen, cintura, quadril) e gordura visceral.
 5. Estruture suas respostas usando títulos em Markdown, listas e destaques em negrito.`;
 
   try {
-    // We can call gemini-1.5-flash
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     const contents = [
@@ -71,7 +82,7 @@ Diretrizes de Atuação:
         contents,
         generationConfig: {
           temperature: 0.7,
-          maxOutputTokens: 1024,
+          maxOutputTokens: 1200,
         },
       }),
     });

@@ -1,26 +1,34 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Navbar } from './components/Navbar';
+import { Navbar, NavTab } from './components/Navbar';
 import { Dashboard } from './components/Dashboard';
 import { WeightForm } from './components/WeightForm';
 import { MeasureForm } from './components/MeasureForm';
+import { WorkoutForm } from './components/WorkoutForm';
+import { PhotoForm } from './components/PhotoForm';
 import { HistoryTable } from './components/HistoryTable';
 import { GeminiAssistant } from './components/GeminiAssistant';
 import { SettingsModal } from './components/SettingsModal';
 import { CheckCircle2 } from 'lucide-react';
 
-import { WeightRecord, MeasureRecord, UserProfile } from './types';
+import { WeightRecord, MeasureRecord, WorkoutRecord, PhotoRecord, UserProfile } from './types';
 import {
   fetchWeights,
   addWeightRecord,
   fetchMeasures,
   addMeasureRecord,
+  fetchWorkouts,
+  addWorkoutRecord,
+  fetchPhotos,
+  addPhotoRecord,
 } from './services/api';
 import { getStoredProfile } from './services/storage';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'weight' | 'measure' | 'history' | 'assistant'>('dashboard');
+  const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
   const [weights, setWeights] = useState<WeightRecord[]>([]);
   const [measures, setMeasures] = useState<MeasureRecord[]>([]);
+  const [workouts, setWorkouts] = useState<WorkoutRecord[]>([]);
+  const [photos, setPhotos] = useState<PhotoRecord[]>([]);
   const [profile, setProfile] = useState<UserProfile>(getStoredProfile());
   const [connectionSource, setConnectionSource] = useState<'cloud' | 'script' | 'local'>('local');
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
@@ -29,27 +37,40 @@ export const App: React.FC = () => {
   const [lastSyncTime, setLastSyncTime] = useState<string>('');
   const [syncToast, setSyncToast] = useState<string | null>(null);
 
-  // Load and sync data from Cloud / Sheets
+  // Load and sync data from Cloud / Sheets across all 4 tabs
   const syncData = useCallback(async (silent = false) => {
     if (!silent) setIsSyncing(true);
     try {
-      const [weightsRes, measuresRes] = await Promise.all([
+      const [weightsRes, measuresRes, workoutsRes, photosRes] = await Promise.all([
         fetchWeights(),
         fetchMeasures(),
+        fetchWorkouts(),
+        fetchPhotos(),
       ]);
 
       setWeights(weightsRes.data);
       setMeasures(measuresRes.data);
+      setWorkouts(workoutsRes.data);
+      setPhotos(photosRes.data);
 
-      const resolvedSource = weightsRes.source !== 'local' ? weightsRes.source : measuresRes.source;
+      const resolvedSource =
+        weightsRes.source !== 'local'
+          ? weightsRes.source
+          : measuresRes.source !== 'local'
+          ? measuresRes.source
+          : workoutsRes.source !== 'local'
+          ? workoutsRes.source
+          : photosRes.source;
       setConnectionSource(resolvedSource);
 
       const timeStr = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
       setLastSyncTime(timeStr);
 
       if (!silent) {
-        setSyncToast(`Planilha sincronizada! (${weightsRes.data.length} pesagens)`);
-        setTimeout(() => setSyncToast(null), 3000);
+        setSyncToast(
+          `Planilha sincronizada! (${weightsRes.data.length} pesagens, ${workoutsRes.data.length} treinos, ${photosRes.data.length} fotos)`
+        );
+        setTimeout(() => setSyncToast(null), 3500);
       }
     } catch (e) {
       console.error('Failed to sync data', e);
@@ -84,7 +105,7 @@ export const App: React.FC = () => {
     };
   }, [syncData]);
 
-  // 3. Sincroniza automaticamente após adicionar registro de peso
+  // 3. Handlers de submissão com sincronização automática
   const handleWeightSubmit = async (record: WeightRecord) => {
     const res = await addWeightRecord(record);
     if (res.success) {
@@ -93,9 +114,31 @@ export const App: React.FC = () => {
     return res;
   };
 
-  // 4. Sincroniza automaticamente após adicionar registro de medidas
   const handleMeasureSubmit = async (record: MeasureRecord) => {
     const res = await addMeasureRecord(record);
+    if (res.success) {
+      await syncData(true);
+    }
+    return res;
+  };
+
+  const handleWorkoutSubmit = async (record: WorkoutRecord) => {
+    const res = await addWorkoutRecord(record);
+    if (res.success) {
+      await syncData(true);
+    }
+    return res;
+  };
+
+  const handlePhotoSubmit = async (payload: {
+    semana: string;
+    data: string;
+    fotoFrenteBase64?: string;
+    fotoLadoBase64?: string;
+    fotoCostaBase64?: string;
+    observacoes?: string;
+  }) => {
+    const res = await addPhotoRecord(payload);
     if (res.success) {
       await syncData(true);
     }
@@ -136,6 +179,8 @@ export const App: React.FC = () => {
               <Dashboard
                 weights={weights}
                 measures={measures}
+                workouts={workouts}
+                photos={photos}
                 profile={profile}
                 onNavigate={setActiveTab}
               />
@@ -157,10 +202,28 @@ export const App: React.FC = () => {
               />
             )}
 
+            {activeTab === 'workout' && (
+              <WorkoutForm
+                latestWeight={weights[weights.length - 1]}
+                onSubmit={handleWorkoutSubmit}
+                onSuccess={() => setActiveTab('dashboard')}
+              />
+            )}
+
+            {activeTab === 'photo' && (
+              <PhotoForm
+                photos={photos}
+                onSubmit={handlePhotoSubmit}
+                onSuccess={() => setActiveTab('dashboard')}
+              />
+            )}
+
             {activeTab === 'history' && (
               <HistoryTable
                 weights={weights}
                 measures={measures}
+                workouts={workouts}
+                photos={photos}
               />
             )}
 
@@ -168,6 +231,8 @@ export const App: React.FC = () => {
               <GeminiAssistant
                 weights={weights}
                 measures={measures}
+                workouts={workouts}
+                photos={photos}
               />
             )}
           </>

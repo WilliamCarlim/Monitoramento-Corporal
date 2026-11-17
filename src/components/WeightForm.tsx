@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Scale, Calendar, Clock, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Scale, Calendar, Clock, FileText, CheckCircle2, AlertCircle, Camera, Upload, Sparkles, Loader2 } from 'lucide-react';
 import { WeightRecord, UserProfile } from '../types';
 import { getTodayBR, getDayOfWeekBR, parseBRNumber, formatBRNumber, calculateIMC } from '../utils/formatters';
+import { extractFromPrint } from '../services/api';
 
 interface WeightFormProps {
   latestWeight?: WeightRecord;
@@ -9,15 +10,6 @@ interface WeightFormProps {
   onSubmit: (record: WeightRecord) => Promise<{ success: boolean; source: string; error?: string }>;
   onSuccess: () => void;
 }
-
-const CONTEXT_OPTIONS = [
-  'Jejum matinal',
-  'Pós-treino / Almoço',
-  'Tarde (pós-lanche)',
-  'Antes de dormir',
-  'Pós-refeição livre',
-  'Outro (descrever nas observações)',
-];
 
 export const WeightForm: React.FC<WeightFormProps> = ({
   latestWeight,
@@ -27,14 +19,32 @@ export const WeightForm: React.FC<WeightFormProps> = ({
 }) => {
   const [data, setData] = useState<string>(getTodayBR());
   const [diaSemana, setDiaSemana] = useState<string>(getDayOfWeekBR());
-  const [contexto, setContexto] = useState<string>('Jejum matinal');
-  const [customContexto, setCustomContexto] = useState<string>('');
+  const [contexto, setContexto] = useState<string>('Manhã 06:41');
   const [pesoInput, setPesoInput] = useState<string>('');
+
+  // Bioimpedance fields
+  const [gorduraPercent, setGorduraPercent] = useState<string>('35.2');
+  const [pesoGordura, setPesoGordura] = useState<string>('39.4');
+  const [massaMuscEsqPercent, setMassaMuscEsqPercent] = useState<string>('32.5');
+  const [pesoMassaMuscEsq, setPesoMassaMuscEsq] = useState<string>('36.3');
+  const [massaMuscularPercent, setMassaMuscularPercent] = useState<string>('62.1');
+  const [pesoMassaMuscular, setPesoMassaMuscular] = useState<string>('69.5');
+  const [aguaPercent, setAguaPercent] = useState<string>('48.6');
+  const [pesoAgua, setPesoAgua] = useState<string>('54.4');
+  const [gorduraVisceral, setGorduraVisceral] = useState<string>('26.0');
+  const [metabolismo, setMetabolismo] = useState<string>('2126');
+  const [imcApp, setImcApp] = useState<string>('36.1');
+  const [alturaApp, setAlturaApp] = useState<string>('176');
+  const [idadeApp, setIdadeApp] = useState<string>('33');
+  const [melhorPeso30d, setMelhorPeso30d] = useState<string>('107.85');
   const [observacoes, setObservacoes] = useState<string>('');
+
   const [loading, setLoading] = useState<boolean>(false);
+  const [ocrLoading, setOcrLoading] = useState<boolean>(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  // Update day of week when date changes
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     setDiaSemana(getDayOfWeekBR(data));
   }, [data]);
@@ -48,12 +58,72 @@ export const WeightForm: React.FC<WeightFormProps> = ({
   const liveDiffInicial = parsedPeso > 0 && initialPeso ? Number((parsedPeso - initialPeso).toFixed(3)) : 0;
   const liveIMC = parsedPeso > 0 ? calculateIMC(parsedPeso, profile.alturaMetros) : null;
 
+  // Process image for OCR
+  const handleImageFile = async (file: File) => {
+    setOcrLoading(true);
+    setFeedback(null);
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64 = reader.result as string;
+        const res = await extractFromPrint(base64, 'weight');
+        if (res.success && res.data) {
+          const d = res.data;
+          if (d.peso) setPesoInput(String(d.peso));
+          if (d.data) setData(d.data);
+          if (d.horario) setContexto(d.horario);
+          if (d.gorduraPercent) setGorduraPercent(String(d.gorduraPercent));
+          if (d.pesoGordura) setPesoGordura(String(d.pesoGordura));
+          if (d.massaMuscEsqPercent) setMassaMuscEsqPercent(String(d.massaMuscEsqPercent));
+          if (d.pesoMassaMuscEsq) setPesoMassaMuscEsq(String(d.pesoMassaMuscEsq));
+          if (d.massaMuscularPercent) setMassaMuscularPercent(String(d.massaMuscularPercent));
+          if (d.pesoMassaMuscular) setPesoMassaMuscular(String(d.pesoMassaMuscular));
+          if (d.aguaPercent) setAguaPercent(String(d.aguaPercent));
+          if (d.pesoAgua) setPesoAgua(String(d.pesoAgua));
+          if (d.gorduraVisceral) setGorduraVisceral(String(d.gorduraVisceral));
+          if (d.metabolismo) setMetabolismo(String(d.metabolismo));
+          if (d.imcApp) setImcApp(String(d.imcApp));
+          if (d.alturaApp) setAlturaApp(String(d.alturaApp));
+          if (d.idadeApp) setIdadeApp(String(d.idadeApp));
+          if (d.melhorPeso30d) setMelhorPeso30d(String(d.melhorPeso30d));
+          if (d.observacoes) setObservacoes(d.observacoes);
+
+          setFeedback({
+            type: 'success',
+            message: '✨ Dados do print de bioimpedância extraídos com sucesso via Gemini Vision!',
+          });
+        } else {
+          setFeedback({
+            type: 'error',
+            message: res.error || 'Não foi possível extrair dados da imagem. Preencha manualmente.',
+          });
+        }
+        setOcrLoading(false);
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      setOcrLoading(false);
+      setFeedback({ type: 'error', message: 'Erro ao ler arquivo de imagem.' });
+    }
+  };
+
+  // Support paste Ctrl+V
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile();
+        if (file) handleImageFile(file);
+      }
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!parsedPeso || parsedPeso <= 20 || parsedPeso >= 350) {
+    if (!parsedPeso || parsedPeso <= 30 || parsedPeso >= 350) {
       setFeedback({
         type: 'error',
-        message: 'Por favor, insira um peso válido em kg (ex: 113,250).',
+        message: 'Por favor, insira um peso válido em kg (ex: 111,750).',
       });
       return;
     }
@@ -61,56 +131,114 @@ export const WeightForm: React.FC<WeightFormProps> = ({
     setLoading(true);
     setFeedback(null);
 
-    const finalContexto = contexto === 'Outro (descrever nas observações)' && customContexto.trim()
-      ? customContexto.trim()
-      : contexto;
+    const record: WeightRecord = {
+      data,
+      diaSemana,
+      contexto,
+      peso: parsedPeso,
+      variacaoAnterior: liveDiffAnterior,
+      variacaoInicial: liveDiffInicial,
+      imc: liveIMC?.imc || 0,
+      gorduraPercent: parseBRNumber(gorduraPercent) || undefined,
+      pesoGordura: parseBRNumber(pesoGordura) || undefined,
+      massaMuscEsqPercent: parseBRNumber(massaMuscEsqPercent) || undefined,
+      pesoMassaMuscEsq: parseBRNumber(pesoMassaMuscEsq) || undefined,
+      massaMuscularPercent: parseBRNumber(massaMuscularPercent) || undefined,
+      pesoMassaMuscular: parseBRNumber(pesoMassaMuscular) || undefined,
+      aguaPercent: parseBRNumber(aguaPercent) || undefined,
+      pesoAgua: parseBRNumber(pesoAgua) || undefined,
+      gorduraVisceral: parseBRNumber(gorduraVisceral) || undefined,
+      metabolismo: parseBRNumber(metabolismo) || undefined,
+      imcApp: parseBRNumber(imcApp) || undefined,
+      alturaApp: parseBRNumber(alturaApp) || undefined,
+      idadeApp: parseBRNumber(idadeApp) || undefined,
+      melhorPeso30d: parseBRNumber(melhorPeso30d) || undefined,
+      observacoes: observacoes.trim(),
+    };
 
     try {
-      const result = await onSubmit({
-        data,
-        diaSemana,
-        contexto: finalContexto,
-        peso: parsedPeso,
-        observacoes: observacoes.trim(),
-      });
-
-      if (result.success) {
+      const res = await onSubmit(record);
+      if (res.success) {
         setFeedback({
           type: 'success',
-          message: `Peso de ${formatBRNumber(parsedPeso, 3)} kg registrado com sucesso! (${result.source === 'cloud' ? 'Google Sheets sincronizado' : 'Salvo localmente'})`,
+          message: `Peso e bioimpedância salvos com sucesso na planilha!`,
         });
-        setPesoInput('');
-        setObservacoes('');
-        setTimeout(() => {
-          onSuccess();
-        }, 1200);
+        setTimeout(() => onSuccess(), 1000);
       } else {
-        setFeedback({
-          type: 'error',
-          message: result.error || 'Erro ao registrar peso. Tente novamente.',
-        });
+        setFeedback({ type: 'error', message: res.error || 'Erro ao registrar peso.' });
       }
     } catch (err: any) {
-      setFeedback({
-        type: 'error',
-        message: err?.message || 'Falha na comunicação com o servidor.',
-      });
+      setFeedback({ type: 'error', message: err.message || 'Falha ao salvar.' });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 pb-20 md:pb-8">
+    <div className="max-w-4xl mx-auto space-y-6 pb-20 md:pb-8" onPaste={handlePaste}>
       {/* Header */}
-      <div className="text-center sm:text-left">
-        <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center justify-center sm:justify-start gap-2">
+      <div>
+        <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
           <Scale className="w-6 h-6 text-emerald-400" />
-          Lançamento Rápido de Peso
+          Lançamento de Peso & Bioimpedância Completa
         </h2>
         <p className="text-slate-400 text-sm mt-1">
-          Registro em tempo real enviado diretamente para a aba <code className="text-emerald-300">Registro de Peso</code> da planilha.
+          Grave todas as 22 métricas na aba <code className="text-emerald-300">Registro de Peso</code> da planilha e atualize os 8 cards em tempo real.
         </p>
+      </div>
+
+      {/* OCR Drag & Drop Banner */}
+      <div className="bg-gradient-to-r from-emerald-950/40 via-slate-900 to-teal-950/40 border border-emerald-500/40 rounded-2xl p-5 shadow-lg relative overflow-hidden">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center flex-shrink-0">
+              <Camera className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                Leitura Automática de Print da Balança (Gemini Vision)
+                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-bold">
+                  OCR IA
+                </span>
+              </h3>
+              <p className="text-xs text-slate-300 mt-0.5">
+                Cole o print com <strong>Ctrl + V</strong> aqui ou selecione a imagem do app (Mi Fitness, Zepp, etc.) para autopreencher todos os campos.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files && e.target.files[0]) {
+                  handleImageFile(e.target.files[0]);
+                }
+              }}
+            />
+            <button
+              type="button"
+              disabled={ocrLoading}
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full sm:w-auto px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-md cursor-pointer"
+            >
+              {ocrLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-white" />
+                  <span>Analisando Print...</span>
+                </>
+              ) : (
+                <>
+                  <Upload className="w-4 h-4" />
+                  <span>Carregar Print</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
       </div>
 
       {feedback && (
@@ -130,10 +258,10 @@ export const WeightForm: React.FC<WeightFormProps> = ({
         </div>
       )}
 
-      {/* Form */}
-      <form onSubmit={handleSubmit} className="bg-slate-800/60 backdrop-blur border border-slate-700/60 rounded-2xl p-6 space-y-5 shadow-xl">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Data */}
+      {/* Main Form */}
+      <form onSubmit={handleSubmit} className="bg-slate-800/60 backdrop-blur border border-slate-700/60 rounded-2xl p-6 space-y-6 shadow-xl">
+        {/* Core fields */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5 text-emerald-400" />
@@ -143,13 +271,11 @@ export const WeightForm: React.FC<WeightFormProps> = ({
               type="text"
               value={data}
               onChange={(e) => setData(e.target.value)}
-              placeholder="DD/MM/AAAA"
-              className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-medium"
+              className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white font-medium text-sm"
               required
             />
           </div>
 
-          {/* Dia da Semana */}
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-slate-400" />
@@ -162,41 +288,27 @@ export const WeightForm: React.FC<WeightFormProps> = ({
               className="w-full bg-slate-900/60 border border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-400 text-sm cursor-not-allowed"
             />
           </div>
-        </div>
 
-        {/* Horário / Contexto */}
-        <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5 text-emerald-400" />
-            Horário / Contexto da Pesagem
-          </label>
-          <select
-            value={contexto}
-            onChange={(e) => setContexto(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-medium"
-          >
-            {CONTEXT_OPTIONS.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </select>
-
-          {contexto === 'Outro (descrever nas observações)' && (
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-emerald-400" />
+              Horário / Contexto
+            </label>
             <input
               type="text"
-              value={customContexto}
-              onChange={(e) => setCustomContexto(e.target.value)}
-              placeholder="Especifique o contexto (ex: Meio da tarde, após sauna...)"
-              className="mt-2 w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+              value={contexto}
+              onChange={(e) => setContexto(e.target.value)}
+              placeholder="Ex: Manhã 06:41"
+              className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white font-medium text-sm"
+              required
             />
-          )}
+          </div>
         </div>
 
-        {/* Peso (kg) */}
-        <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center gap-1.5">
-            <Scale className="w-3.5 h-3.5 text-emerald-400" />
+        {/* Peso principal */}
+        <div className="bg-slate-900/80 p-4 rounded-xl border border-emerald-500/40">
+          <label className="block text-xs font-semibold uppercase tracking-wider text-emerald-400 mb-1.5 flex items-center gap-1.5">
+            <Scale className="w-4 h-4 text-emerald-400" />
             Peso Corporal (kg)
           </label>
           <div className="relative">
@@ -205,70 +317,165 @@ export const WeightForm: React.FC<WeightFormProps> = ({
               inputMode="decimal"
               value={pesoInput}
               onChange={(e) => setPesoInput(e.target.value)}
-              placeholder="Ex: 113,250 ou 113.25"
-              className="w-full bg-slate-900 border border-emerald-500/50 rounded-xl px-4 py-3 text-white text-lg font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 pr-12"
+              placeholder="Ex: 111,750 ou 113.250"
+              className="w-full bg-slate-950 border border-emerald-500/60 rounded-xl px-4 py-3 text-white text-xl font-bold pr-12"
               required
-              autoFocus
             />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-semibold text-sm">
-              kg
-            </span>
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-semibold">kg</span>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
-            Dica: Aceita vírgula ou ponto (padrão brasileiro será gravado na planilha: <code className="text-emerald-300">113,250</code>).
-          </p>
-        </div>
 
-        {/* Live Calculation Preview Card */}
-        {parsedPeso > 0 && (
-          <div className="bg-slate-900/90 border border-slate-700/80 rounded-xl p-4 space-y-3">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
-              Pré-visualização dos Cálculos Automáticos
-            </span>
-
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <div className="bg-slate-800/60 p-2.5 rounded-lg border border-slate-700/40">
-                <span className="text-[11px] text-slate-400 block">Var. vs. Anterior</span>
-                <span
-                  className={`text-sm font-bold ${
-                    liveDiffAnterior < 0
-                      ? 'text-emerald-400'
-                      : liveDiffAnterior > 0
-                      ? 'text-rose-400'
-                      : 'text-slate-300'
-                  }`}
-                >
+          {parsedPeso > 0 && (
+            <div className="grid grid-cols-3 gap-2 mt-3 text-center">
+              <div className="bg-slate-800/80 p-2 rounded-lg border border-slate-700">
+                <span className="text-[10px] text-slate-400 block">Var. vs. Anterior</span>
+                <span className={`text-xs font-bold ${liveDiffAnterior < 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                   {liveDiffAnterior > 0 ? `+${formatBRNumber(liveDiffAnterior, 3)}` : formatBRNumber(liveDiffAnterior, 3)} kg
                 </span>
               </div>
-
-              <div className="bg-slate-800/60 p-2.5 rounded-lg border border-slate-700/40">
-                <span className="text-[11px] text-slate-400 block">Var. vs. Inicial</span>
-                <span
-                  className={`text-sm font-bold ${
-                    liveDiffInicial < 0
-                      ? 'text-emerald-400'
-                      : liveDiffInicial > 0
-                      ? 'text-rose-400'
-                      : 'text-slate-300'
-                  }`}
-                >
+              <div className="bg-slate-800/80 p-2 rounded-lg border border-slate-700">
+                <span className="text-[10px] text-slate-400 block">Var. vs. Inicial</span>
+                <span className={`text-xs font-bold ${liveDiffInicial < 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                   {liveDiffInicial > 0 ? `+${formatBRNumber(liveDiffInicial, 3)}` : formatBRNumber(liveDiffInicial, 3)} kg
                 </span>
               </div>
-
-              <div className="bg-slate-800/60 p-2.5 rounded-lg border border-slate-700/40">
-                <span className="text-[11px] text-slate-400 block">IMC Calculado</span>
-                <span className="text-sm font-bold text-white block">
-                  {liveIMC ? formatBRNumber(liveIMC.imc, 2) : '-'}
-                </span>
-                <span className={`text-[10px] ${liveIMC?.cor}`}>
-                  {liveIMC?.classificacao}
-                </span>
+              <div className="bg-slate-800/80 p-2 rounded-lg border border-slate-700">
+                <span className="text-[10px] text-slate-400 block">IMC Calculado</span>
+                <span className="text-xs font-bold text-white block">{liveIMC ? formatBRNumber(liveIMC.imc, 2) : '-'}</span>
               </div>
             </div>
+          )}
+        </div>
+
+        {/* Bioimpedance Metrics Grid */}
+        <div className="border border-slate-700/80 bg-slate-900/40 rounded-xl p-4 space-y-4">
+          <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            Métricas de Bioimpedância da Balança
+          </h3>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div>
+              <label className="block text-[11px] text-amber-400 mb-1">Gordura (%)</label>
+              <input
+                type="text"
+                value={gorduraPercent}
+                onChange={(e) => setGorduraPercent(e.target.value)}
+                placeholder="35.2"
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-xs font-semibold"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] text-slate-400 mb-1">Peso Gordura (kg)</label>
+              <input
+                type="text"
+                value={pesoGordura}
+                onChange={(e) => setPesoGordura(e.target.value)}
+                placeholder="39.4"
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-xs"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] text-sky-400 mb-1">Massa Muscular (%)</label>
+              <input
+                type="text"
+                value={massaMuscularPercent}
+                onChange={(e) => setMassaMuscularPercent(e.target.value)}
+                placeholder="62.1"
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-xs font-semibold"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] text-slate-400 mb-1">Peso Músculo (kg)</label>
+              <input
+                type="text"
+                value={pesoMassaMuscular}
+                onChange={(e) => setPesoMassaMuscular(e.target.value)}
+                placeholder="69.5"
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-xs"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] text-slate-300 mb-1">Massa Musc. Esq. (%)</label>
+              <input
+                type="text"
+                value={massaMuscEsqPercent}
+                onChange={(e) => setMassaMuscEsqPercent(e.target.value)}
+                placeholder="32.5"
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-xs"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] text-slate-400 mb-1">Peso Musc. Esq. (kg)</label>
+              <input
+                type="text"
+                value={pesoMassaMuscEsq}
+                onChange={(e) => setPesoMassaMuscEsq(e.target.value)}
+                placeholder="36.3"
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-xs"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] text-cyan-400 mb-1">Água (%)</label>
+              <input
+                type="text"
+                value={aguaPercent}
+                onChange={(e) => setAguaPercent(e.target.value)}
+                placeholder="48.6"
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-xs"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] text-slate-400 mb-1">Peso Água (kg)</label>
+              <input
+                type="text"
+                value={pesoAgua}
+                onChange={(e) => setPesoAgua(e.target.value)}
+                placeholder="54.4"
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-xs"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] text-rose-400 mb-1">Gordura Visceral</label>
+              <input
+                type="text"
+                value={gorduraVisceral}
+                onChange={(e) => setGorduraVisceral(e.target.value)}
+                placeholder="26.0"
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-xs font-semibold"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] text-purple-400 mb-1">Metabolismo Basal</label>
+              <input
+                type="text"
+                value={metabolismo}
+                onChange={(e) => setMetabolismo(e.target.value)}
+                placeholder="2126"
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-xs font-semibold"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] text-slate-400 mb-1">IMC do App</label>
+              <input
+                type="text"
+                value={imcApp}
+                onChange={(e) => setImcApp(e.target.value)}
+                placeholder="36.1"
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-xs"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] text-emerald-400 mb-1">Melhor Peso 30d (kg)</label>
+              <input
+                type="text"
+                value={melhorPeso30d}
+                onChange={(e) => setMelhorPeso30d(e.target.value)}
+                placeholder="107.85"
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-xs"
+              />
+            </div>
           </div>
-        )}
+        </div>
 
         {/* Observações */}
         <div>
@@ -276,13 +483,13 @@ export const WeightForm: React.FC<WeightFormProps> = ({
             <FileText className="w-3.5 h-3.5 text-slate-400" />
             Observações
           </label>
-          <textarea
+          <input
+            type="text"
             value={observacoes}
             onChange={(e) => setObservacoes(e.target.value)}
-            rows={2}
-            placeholder="Ex: Após treino pesado de pernas, ingestão moderada de água..."
-            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
-          ></textarea>
+            placeholder="Ex: Aferição matinal em jejum antes de treinar..."
+            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white text-sm"
+          />
         </div>
 
         {/* Submit Button */}
@@ -293,13 +500,13 @@ export const WeightForm: React.FC<WeightFormProps> = ({
         >
           {loading ? (
             <span className="flex items-center gap-2">
-              <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              <Loader2 className="w-4 h-4 animate-spin" />
               Gravando na Planilha...
             </span>
           ) : (
             <>
               <Scale className="w-5 h-5" />
-              Salvar Registro de Peso
+              Salvar Registro de Peso & Bioimpedância
             </>
           )}
         </button>

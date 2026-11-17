@@ -1,10 +1,23 @@
 import React from 'react';
-import { Activity, Scale, Ruler, History, Sparkles, Settings, ExternalLink, RefreshCw } from 'lucide-react';
+import {
+  Activity,
+  Scale,
+  Ruler,
+  Dumbbell,
+  Camera,
+  History,
+  Sparkles,
+  Settings,
+  ExternalLink,
+  RefreshCw,
+} from 'lucide-react';
 import { SPREADSHEET_ID } from '../services/api';
 
+export type NavTab = 'dashboard' | 'weight' | 'measure' | 'workout' | 'photo' | 'history' | 'assistant';
+
 interface NavbarProps {
-  activeTab: 'dashboard' | 'weight' | 'measure' | 'history' | 'assistant';
-  setActiveTab: (tab: 'dashboard' | 'weight' | 'measure' | 'history' | 'assistant') => void;
+  activeTab: NavTab;
+  setActiveTab: (tab: NavTab) => void;
   onOpenSettings: () => void;
   connectionSource: 'cloud' | 'script' | 'local';
   onSync: () => void;
@@ -32,9 +45,9 @@ export const Navbar: React.FC<NavbarProps> = ({
         );
       case 'script':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-            Planilha Conectada
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-cyan-500/15 text-cyan-400 border border-cyan-500/30">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+            Web App Conectado
           </span>
         );
       case 'local':
@@ -58,7 +71,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex items-center justify-between h-16">
           {/* Logo & title */}
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveTab('dashboard')}>
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 via-teal-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-emerald-500/20">
               <Activity className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -69,73 +82,94 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </span>
               </h1>
               <p className="text-xs text-slate-400 hidden sm:block">
-                Acompanhamento em Tempo Real & Gemini AI
+                Peso, Bioimpedância, Medidas, Treinos & Fotos
               </p>
             </div>
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-1 bg-slate-800/80 p-1 rounded-xl border border-slate-700/60">
+          <nav className="hidden lg:flex items-center gap-1 bg-slate-800/80 p-1 rounded-xl border border-slate-700/60">
             <button
               onClick={() => setActiveTab('dashboard')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                 activeTab === 'dashboard'
                   ? 'bg-emerald-600 text-white shadow-sm'
                   : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
               }`}
             >
-              <Activity className="w-4 h-4" />
+              <Activity className="w-3.5 h-3.5" />
               Dashboard
             </button>
             <button
               onClick={() => setActiveTab('weight')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                 activeTab === 'weight'
                   ? 'bg-emerald-600 text-white shadow-sm'
                   : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
               }`}
             >
-              <Scale className="w-4 h-4" />
-              Lançar Peso
+              <Scale className="w-3.5 h-3.5" />
+              Peso
             </button>
             <button
               onClick={() => setActiveTab('measure')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                 activeTab === 'measure'
                   ? 'bg-emerald-600 text-white shadow-sm'
                   : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
               }`}
             >
-              <Ruler className="w-4 h-4" />
+              <Ruler className="w-3.5 h-3.5" />
               Medidas
             </button>
             <button
+              onClick={() => setActiveTab('workout')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                activeTab === 'workout'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+              }`}
+            >
+              <Dumbbell className="w-3.5 h-3.5" />
+              Treinos
+            </button>
+            <button
+              onClick={() => setActiveTab('photo')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                activeTab === 'photo'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+              }`}
+            >
+              <Camera className="w-3.5 h-3.5" />
+              Fotos
+            </button>
+            <button
               onClick={() => setActiveTab('history')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                 activeTab === 'history'
                   ? 'bg-emerald-600 text-white shadow-sm'
                   : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
               }`}
             >
-              <History className="w-4 h-4" />
+              <History className="w-3.5 h-3.5" />
               Histórico
             </button>
             <button
               onClick={() => setActiveTab('assistant')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                 activeTab === 'assistant'
                   ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-sm'
                   : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
               }`}
             >
-              <Sparkles className="w-4 h-4 text-purple-300" />
+              <Sparkles className="w-3.5 h-3.5 text-purple-300" />
               Gemini AI
             </button>
           </nav>
 
-          {/* Right actions: Sync button, Badge, Sheets link, Settings */}
+          {/* Right actions */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Sync Button */}
             <button
               onClick={onSync}
               disabled={isSyncing}
@@ -148,7 +182,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               </span>
             </button>
 
-            <div className="hidden lg:block">{getBadge()}</div>
+            <div className="hidden xl:block">{getBadge()}</div>
 
             <a
               href={`https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/edit`}
@@ -172,50 +206,68 @@ export const Navbar: React.FC<NavbarProps> = ({
       </div>
 
       {/* Mobile Navigation bar at bottom */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-2 py-2 flex justify-around">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-1 py-2 flex justify-around">
         <button
           onClick={() => setActiveTab('dashboard')}
-          className={`flex flex-col items-center gap-1 py-1 px-2 rounded-lg text-xs ${
+          className={`flex flex-col items-center gap-0.5 py-1 px-1.5 rounded-lg text-[10px] ${
             activeTab === 'dashboard' ? 'text-emerald-400 font-semibold' : 'text-slate-400'
           }`}
         >
-          <Activity className="w-5 h-5" />
-          Início
+          <Activity className="w-4 h-4" />
+          Dashboard
         </button>
         <button
           onClick={() => setActiveTab('weight')}
-          className={`flex flex-col items-center gap-1 py-1 px-2 rounded-lg text-xs ${
+          className={`flex flex-col items-center gap-0.5 py-1 px-1.5 rounded-lg text-[10px] ${
             activeTab === 'weight' ? 'text-emerald-400 font-semibold' : 'text-slate-400'
           }`}
         >
-          <Scale className="w-5 h-5" />
+          <Scale className="w-4 h-4" />
           Peso
         </button>
         <button
           onClick={() => setActiveTab('measure')}
-          className={`flex flex-col items-center gap-1 py-1 px-2 rounded-lg text-xs ${
+          className={`flex flex-col items-center gap-0.5 py-1 px-1.5 rounded-lg text-[10px] ${
             activeTab === 'measure' ? 'text-emerald-400 font-semibold' : 'text-slate-400'
           }`}
         >
-          <Ruler className="w-5 h-5" />
+          <Ruler className="w-4 h-4" />
           Medidas
         </button>
         <button
+          onClick={() => setActiveTab('workout')}
+          className={`flex flex-col items-center gap-0.5 py-1 px-1.5 rounded-lg text-[10px] ${
+            activeTab === 'workout' ? 'text-emerald-400 font-semibold' : 'text-slate-400'
+          }`}
+        >
+          <Dumbbell className="w-4 h-4" />
+          Treinos
+        </button>
+        <button
+          onClick={() => setActiveTab('photo')}
+          className={`flex flex-col items-center gap-0.5 py-1 px-1.5 rounded-lg text-[10px] ${
+            activeTab === 'photo' ? 'text-emerald-400 font-semibold' : 'text-slate-400'
+          }`}
+        >
+          <Camera className="w-4 h-4" />
+          Fotos
+        </button>
+        <button
           onClick={() => setActiveTab('history')}
-          className={`flex flex-col items-center gap-1 py-1 px-2 rounded-lg text-xs ${
+          className={`flex flex-col items-center gap-0.5 py-1 px-1.5 rounded-lg text-[10px] ${
             activeTab === 'history' ? 'text-emerald-400 font-semibold' : 'text-slate-400'
           }`}
         >
-          <History className="w-5 h-5" />
-          Tabela
+          <History className="w-4 h-4" />
+          Histórico
         </button>
         <button
           onClick={() => setActiveTab('assistant')}
-          className={`flex flex-col items-center gap-1 py-1 px-2 rounded-lg text-xs ${
+          className={`flex flex-col items-center gap-0.5 py-1 px-1.5 rounded-lg text-[10px] ${
             activeTab === 'assistant' ? 'text-purple-400 font-semibold' : 'text-slate-400'
           }`}
         >
-          <Sparkles className="w-5 h-5" />
+          <Sparkles className="w-4 h-4" />
           Gemini
         </button>
       </div>

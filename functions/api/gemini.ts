@@ -130,9 +130,6 @@ Diretrizes de Atuação:
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error: any) {
-      headers: { 'Content-Type': 'application/json' },
-    });
-  } catch (error: any) {
     return new Response(
       JSON.stringify({
         error: error.message,

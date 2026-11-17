@@ -6,8 +6,6 @@ import {
   Ruler,
   Dumbbell,
   HeartPulse,
-  Camera,
-  Sparkles,
   ArrowRight,
   Flame,
   Calendar,
@@ -63,22 +61,61 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onNavigate,
 }) => {
   const latestWeight = weights.length > 0 ? weights[weights.length - 1] : null;
-  const initialWeight = profile.pesoInicial || 113.250;
+  const firstWeightRecord = weights.length > 0 ? weights[0] : null;
+  const initialWeight = firstWeightRecord?.peso || profile.pesoInicial || 113.250;
   const currentWeight = latestWeight ? latestWeight.peso : 111.750;
-  const totalDiff = Number((currentWeight - initialWeight).toFixed(3));
+  const currPeso = currentWeight;
 
   const imcInfo = calculateIMC(currentWeight, profile.alturaMetros);
+  const currImc = imcInfo.imc;
 
   // Bioimpedance metrics from latest record with percent normalization (e.g. 0.352 -> 35.2)
   const rawGordura = latestWeight?.gorduraPercent ?? 35.2;
   const gorduraPercent = rawGordura > 0 && rawGordura <= 1.0 ? Math.round(rawGordura * 1000) / 10 : rawGordura;
+  const currGordura = gorduraPercent;
   const pesoGordura = latestWeight?.pesoGordura ?? 39.4;
 
   const rawMassaMusc = latestWeight?.massaMuscularPercent ?? 62.1;
   const massaMuscular = rawMassaMusc > 0 && rawMassaMusc <= 1.0 ? Math.round(rawMassaMusc * 1000) / 10 : rawMassaMusc;
+  const currMassaMusc = massaMuscular;
   const pesoMassaMusc = latestWeight?.pesoMassaMuscular ?? 69.5;
   const gorduraVisceral = latestWeight?.gorduraVisceral ?? 26.0;
+  const currVisceral = gorduraVisceral;
   const metabolismo = latestWeight?.metabolismo ?? 2126.0;
+  const currMetabolismo = metabolismo;
+
+  // Métricas iniciais e variações completas para todos os 8 cards do painel
+  const initPeso = firstWeightRecord?.peso ?? (profile.pesoInicial || 113.250);
+  const diffPeso = Number((currentWeight - initPeso).toFixed(3));
+
+  const initImc = firstWeightRecord?.imc ?? 34.95;
+  const diffImc = Number((imcInfo.imc - initImc).toFixed(2));
+
+  const rawInitGordura = firstWeightRecord?.gorduraPercent ?? 35.6;
+  const initGordura = rawInitGordura > 0 && rawInitGordura <= 1.0 ? Math.round(rawInitGordura * 1000) / 10 : rawInitGordura;
+  const diffGordura = Number((gorduraPercent - initGordura).toFixed(1));
+
+  const rawInitMassa = firstWeightRecord?.massaMuscularPercent ?? 61.8;
+  const initMassaMusc = rawInitMassa > 0 && rawInitMassa <= 1.0 ? Math.round(rawInitMassa * 1000) / 10 : rawInitMassa;
+  const diffMassaMusc = Number((massaMuscular - initMassaMusc).toFixed(1));
+
+  const rawInitEsq = firstWeightRecord?.massaMuscEsqPercent ?? 32.3;
+  const initMassaEsq = rawInitEsq > 0 && rawInitEsq <= 1.0 ? Math.round(rawInitEsq * 1000) / 10 : rawInitEsq;
+  const rawCurrEsq = latestWeight?.massaMuscEsqPercent ?? 32.5;
+  const currMassaEsq = rawCurrEsq > 0 && rawCurrEsq <= 1.0 ? Math.round(rawCurrEsq * 1000) / 10 : rawCurrEsq;
+  const diffMassaEsq = Number((currMassaEsq - initMassaEsq).toFixed(1));
+
+  const initVisceral = firstWeightRecord?.gorduraVisceral ?? 26.5;
+  const diffVisceral = Number((gorduraVisceral - initVisceral).toFixed(1));
+
+  const rawInitAgua = firstWeightRecord?.aguaPercent ?? 48.5;
+  const initAgua = rawInitAgua > 0 && rawInitAgua <= 1.0 ? Math.round(rawInitAgua * 1000) / 10 : rawInitAgua;
+  const rawCurrAgua = latestWeight?.aguaPercent ?? 48.6;
+  const currAgua = rawCurrAgua > 0 && rawCurrAgua <= 1.0 ? Math.round(rawCurrAgua * 1000) / 10 : rawCurrAgua;
+  const diffAgua = Number((currAgua - initAgua).toFixed(1));
+
+  const initMetabolismo = firstWeightRecord?.metabolismo ?? 2146.0;
+  const diffMetabolismo = Math.round(metabolismo - initMetabolismo);
 
   // Latest abdominal measurement
   const latestAbdomenRecord = [...measures].reverse().find((m) => m.abdomen && m.abdomen > 0);
@@ -278,211 +315,300 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   return (
     <div className="space-y-6 pb-20 md:pb-8">
-      {/* Top Welcome Banner */}
-      <div className="bg-gradient-to-r from-slate-800/90 via-slate-850 to-emerald-950/40 p-5 sm:p-6 rounded-2xl border border-slate-700/60 shadow-xl relative overflow-hidden">
-        <div className="absolute right-0 top-0 translate-x-8 -translate-y-8 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      {/* Clean Initial Profile & Baseline Info Banner */}
+      <div className="bg-slate-800/60 backdrop-blur border border-slate-700/60 p-4 sm:p-5 rounded-2xl shadow-lg relative overflow-hidden">
+        <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-10">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
-            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 mb-2">
-              <Flame className="w-3.5 h-3.5" />
-              Acompanhamento Corporal & Bioimpedância em Tempo Real
+            <div className="flex items-center gap-2 mb-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">
+                Protocolo Will Fit 2026 • Dados Iniciais & Linha de Base
+              </span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-              Painel Integrado das 5 Abas da Planilha
-            </h2>
-            <p className="text-slate-400 text-sm mt-1">
-              Altura: <strong className="text-slate-200">{formatBRNumber(profile.alturaMetros, 2)} m</strong> • Peso de Partida: <strong className="text-slate-200">{formatBRNumber(initialWeight, 3)} kg</strong> • Abdômen: <strong className="text-slate-200">{latestAbdomen} cm</strong> • Fotos: <strong className="text-slate-200">{photos.length} reg.</strong>
+            <p className="text-xs sm:text-sm text-slate-300">
+              Acompanhamento integrado de Bioimpedância, Medidas, Cardio e Musculação sincronizado com o Google Sheets.
             </p>
           </div>
 
-          {/* Quick Action Buttons with OCR shortcuts */}
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => onNavigate('weight')}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-md shadow-emerald-600/30 transition transform active:scale-95 cursor-pointer"
-            >
-              <Scale className="w-4 h-4" />
-              Lançar Peso (OCR)
-            </button>
-            <button
-              onClick={() => onNavigate('cardio')}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-md shadow-sky-600/30 transition transform active:scale-95 cursor-pointer"
-            >
-              <HeartPulse className="w-4 h-4" />
-              Lançar Cardio (Strava)
-            </button>
-            <button
-              onClick={() => onNavigate('workout')}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-md shadow-indigo-600/30 transition transform active:scale-95 cursor-pointer"
-            >
-              <Dumbbell className="w-4 h-4" />
-              Lançar Musculação
-            </button>
-            <button
-              onClick={() => onNavigate('measure')}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-cyan-700 hover:bg-cyan-600 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-md transition transform active:scale-95 cursor-pointer"
-            >
-              <Ruler className="w-4 h-4" />
-              Medidas
-            </button>
-            <button
-              onClick={() => onNavigate('photo')}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-purple-700 hover:bg-purple-600 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-md transition cursor-pointer"
-            >
-              <Camera className="w-4 h-4" />
-              Fotos
-            </button>
-            <button
-              onClick={() => onNavigate('assistant')}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-md shadow-purple-600/30 transition cursor-pointer"
-            >
-              <Sparkles className="w-4 h-4" />
-              Gemini IA
-            </button>
+          {/* Clean baseline metric pills */}
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <div className="bg-slate-900/70 border border-slate-700/60 px-3 py-1.5 rounded-xl flex items-center gap-2">
+              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+              <span className="text-slate-400">Início:</span>
+              <strong className="text-white font-semibold">{weights[0]?.data || '16/11/2026'}</strong>
+            </div>
+
+            <div className="bg-slate-900/70 border border-slate-700/60 px-3 py-1.5 rounded-xl flex items-center gap-2">
+              <span className="text-slate-400">Altura:</span>
+              <strong className="text-white font-semibold">{formatBRNumber(profile.alturaMetros, 2)} m</strong>
+            </div>
+
+            <div className="bg-slate-900/70 border border-slate-700/60 px-3 py-1.5 rounded-xl flex items-center gap-2">
+              <Scale className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="text-slate-400">Peso Inicial:</span>
+              <strong className="text-emerald-300 font-bold">{formatBRNumber(initPeso, 3)} kg</strong>
+            </div>
+
+            <div className="bg-slate-900/70 border border-slate-700/60 px-3 py-1.5 rounded-xl flex items-center gap-2">
+              <Ruler className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="text-slate-400">Abdômen:</span>
+              <strong className="text-white font-semibold">{latestAbdomen || 127} cm</strong>
+            </div>
+
+            <div className="bg-slate-900/70 border border-slate-700/60 px-3 py-1.5 rounded-xl flex items-center gap-2">
+              <span className="text-slate-400">Idade:</span>
+              <strong className="text-white font-semibold">{profile.idade || 33} anos</strong>
+            </div>
+
+            <div className="bg-slate-900/70 border border-slate-700/60 px-3 py-1.5 rounded-xl flex items-center gap-2">
+              <span className="text-slate-400">Fotos:</span>
+              <strong className="text-white font-semibold">{photos.length} reg.</strong>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* 8 Dynamic Cards from "Registro de Peso" */}
+      {/* 8 Dynamic Cards from "Registro de Peso" with Baseline & Variation */}
       <div>
         <h3 className="text-xs uppercase font-bold tracking-wider text-slate-400 mb-3 flex items-center gap-2">
           <Activity className="w-4 h-4 text-emerald-400" />
           Painel de Bioimpedância & Peso Corporal (8 Cards Dinâmicos)
         </h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-          {/* Card 1: Peso Inicial */}
-          <div className="bg-slate-800/60 backdrop-blur border border-slate-700/60 p-3 rounded-xl flex flex-col justify-between">
-            <span className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold truncate">
-              PESO INICIAL
-            </span>
-            <div className="mt-1">
-              <span className="text-lg sm:text-xl font-black text-white">
-                {formatBRNumber(initialWeight, 3)}
-              </span>
-              <span className="text-[10px] text-slate-400 ml-0.5">kg</span>
-            </div>
-            <span className="text-[10px] text-slate-400 mt-1 truncate">16/11/2026</span>
-          </div>
-
-          {/* Card 2: Peso Atual */}
-          <div className="bg-slate-800/70 backdrop-blur border border-emerald-500/50 p-3 rounded-xl flex flex-col justify-between relative overflow-hidden">
+          {/* Card 1: Peso Corporal */}
+          <div className="bg-slate-800/70 backdrop-blur border border-emerald-500/40 p-3 sm:p-3.5 rounded-xl flex flex-col justify-between relative overflow-hidden">
             <div className="flex items-center justify-between">
               <span className="text-[10px] uppercase tracking-wider text-emerald-400 font-bold truncate">
-                PESO ATUAL
+                PESO
               </span>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-            </div>
-            <div className="mt-1">
-              <span className="text-lg sm:text-xl font-black text-emerald-300">
-                {formatBRNumber(currentWeight, 3)}
+              <span className="text-[10px] text-slate-400 bg-slate-900/60 px-1.5 py-0.5 rounded border border-slate-700/50">
+                Início: <strong className="text-slate-300 font-semibold">{formatBRNumber(initPeso, 3)}</strong>
               </span>
-              <span className="text-[10px] text-emerald-400 ml-0.5">kg</span>
             </div>
-            <span className="text-[10px] text-slate-400 mt-1 truncate" title={latestWeight?.contexto}>
-              {latestWeight?.contexto || 'Recente'}
-            </span>
+            <div className="mt-2">
+              <div className="flex items-baseline gap-1">
+                <span className="text-xl sm:text-2xl font-black text-white">
+                  {formatBRNumber(currPeso, 3)}
+                </span>
+                <span className="text-xs text-slate-400">kg</span>
+              </div>
+              <span className="text-[10px] text-slate-400 truncate block mt-0.5">
+                {latestWeight?.contexto || 'Balança de casa'}
+              </span>
+            </div>
+            <div className="mt-2.5 pt-2 border-t border-slate-700/50 flex items-center justify-between text-xs">
+              <span className="text-[10px] uppercase font-semibold text-slate-400">Variação</span>
+              <span className={`inline-flex items-center gap-0.5 font-bold text-xs ${diffPeso <= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                {diffPeso < 0 ? <TrendingDown className="w-3.5 h-3.5" /> : diffPeso > 0 ? <TrendingUp className="w-3.5 h-3.5" /> : null}
+                {diffPeso > 0 ? `+${formatBRNumber(diffPeso, 3)}` : formatBRNumber(diffPeso, 3)} kg
+              </span>
+            </div>
           </div>
 
-          {/* Card 3: Variação Total */}
-          <div className="bg-slate-800/60 backdrop-blur border border-slate-700/60 p-3 rounded-xl flex flex-col justify-between">
-            <span className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold truncate">
-              VARIAÇÃO TOTAL
-            </span>
-            <div className="mt-1 flex items-center gap-1">
-              {totalDiff < 0 ? (
-                <TrendingDown className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-              ) : totalDiff > 0 ? (
-                <TrendingUp className="w-4 h-4 text-rose-400 flex-shrink-0" />
-              ) : null}
-              <span
-                className={`text-lg sm:text-xl font-black ${
-                  totalDiff < 0
-                    ? 'text-emerald-400'
-                    : totalDiff > 0
-                    ? 'text-rose-400'
-                    : 'text-slate-300'
-                }`}
-              >
-                {totalDiff > 0 ? `+${formatBRNumber(totalDiff, 3)}` : formatBRNumber(totalDiff, 3)}
-              </span>
-              <span className="text-[10px] text-slate-400">kg</span>
-            </div>
-            <span className="text-[10px] text-emerald-400 font-medium mt-1">Perda acumulada</span>
-          </div>
-
-          {/* Card 4: IMC Atual */}
-          <div className="bg-slate-800/60 backdrop-blur border border-slate-700/60 p-3 rounded-xl flex flex-col justify-between">
+          {/* Card 2: IMC */}
+          <div className="bg-slate-800/70 backdrop-blur border border-slate-700/60 hover:border-slate-600 transition p-3 sm:p-3.5 rounded-xl flex flex-col justify-between">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold truncate">
-                IMC ATUAL
+              <span className="text-[10px] uppercase tracking-wider text-slate-300 font-bold truncate">
+                IMC
+              </span>
+              <span className="text-[10px] text-slate-400 bg-slate-900/60 px-1.5 py-0.5 rounded border border-slate-700/50">
+                Início: <strong className="text-slate-300 font-semibold">{formatBRNumber(initImc, 2)}</strong>
               </span>
             </div>
-            <div className="mt-1">
-              <span className="text-lg sm:text-xl font-black text-white">
-                {formatBRNumber(imcInfo.imc, 2)}
+            <div className="mt-2">
+              <div className="flex items-baseline gap-1">
+                <span className="text-xl sm:text-2xl font-black text-white">
+                  {formatBRNumber(currImc, 2)}
+                </span>
+              </div>
+              <span className={`text-[10px] font-bold uppercase truncate block mt-0.5 ${imcInfo.cor}`}>
+                {imcInfo.classificacao}
               </span>
             </div>
-            <span className={`text-[9px] font-bold uppercase truncate ${imcInfo.cor}`}>
-              {imcInfo.classificacao}
-            </span>
+            <div className="mt-2.5 pt-2 border-t border-slate-700/50 flex items-center justify-between text-xs">
+              <span className="text-[10px] uppercase font-semibold text-slate-400">Variação</span>
+              <span className={`inline-flex items-center gap-0.5 font-bold text-xs ${diffImc <= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                {diffImc < 0 ? <TrendingDown className="w-3.5 h-3.5" /> : diffImc > 0 ? <TrendingUp className="w-3.5 h-3.5" /> : null}
+                {diffImc > 0 ? `+${formatBRNumber(diffImc, 2)}` : formatBRNumber(diffImc, 2)}
+              </span>
+            </div>
           </div>
 
-          {/* Card 5: Gordura Atual */}
-          <div className="bg-slate-800/60 backdrop-blur border border-slate-700/60 p-3 rounded-xl flex flex-col justify-between">
-            <span className="text-[10px] uppercase tracking-wider text-amber-400 font-semibold truncate">
-              GORDURA ATUAL
-            </span>
-            <div className="mt-1">
-              <span className="text-lg sm:text-xl font-black text-amber-300">
-                {formatBRNumber(gorduraPercent, 1)}%
+          {/* Card 3: Gordura Corporal */}
+          <div className="bg-slate-800/70 backdrop-blur border border-amber-500/30 p-3 sm:p-3.5 rounded-xl flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] uppercase tracking-wider text-amber-400 font-bold truncate">
+                GORDURA
+              </span>
+              <span className="text-[10px] text-slate-400 bg-slate-900/60 px-1.5 py-0.5 rounded border border-slate-700/50">
+                Início: <strong className="text-slate-300 font-semibold">{formatBRNumber(initGordura, 1)}%</strong>
               </span>
             </div>
-            <span className="text-[10px] text-slate-400 mt-1 truncate">
-              {formatBRNumber(pesoGordura, 1)} kg gordura
-            </span>
+            <div className="mt-2">
+              <div className="flex items-baseline gap-1">
+                <span className="text-xl sm:text-2xl font-black text-amber-300">
+                  {formatBRNumber(currGordura, 1)}%
+                </span>
+              </div>
+              <span className="text-[10px] text-slate-400 truncate block mt-0.5">
+                {formatBRNumber(pesoGordura, 1)} kg gordura
+              </span>
+            </div>
+            <div className="mt-2.5 pt-2 border-t border-slate-700/50 flex items-center justify-between text-xs">
+              <span className="text-[10px] uppercase font-semibold text-slate-400">Variação</span>
+              <span className={`inline-flex items-center gap-0.5 font-bold text-xs ${diffGordura <= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                {diffGordura < 0 ? <TrendingDown className="w-3.5 h-3.5" /> : diffGordura > 0 ? <TrendingUp className="w-3.5 h-3.5" /> : null}
+                {diffGordura > 0 ? `+${formatBRNumber(diffGordura, 1)}%` : `${formatBRNumber(diffGordura, 1)}%`}
+              </span>
+            </div>
           </div>
 
-          {/* Card 6: Massa Muscular */}
-          <div className="bg-slate-800/60 backdrop-blur border border-slate-700/60 p-3 rounded-xl flex flex-col justify-between">
-            <span className="text-[10px] uppercase tracking-wider text-teal-400 font-semibold truncate">
-              MASSA MUSCULAR
-            </span>
-            <div className="mt-1">
-              <span className="text-lg sm:text-xl font-black text-teal-300">
-                {formatBRNumber(massaMuscular, 1)}%
+          {/* Card 4: Massa Muscular */}
+          <div className="bg-slate-800/70 backdrop-blur border border-teal-500/30 p-3 sm:p-3.5 rounded-xl flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] uppercase tracking-wider text-teal-400 font-bold truncate">
+                M. MUSCULAR
+              </span>
+              <span className="text-[10px] text-slate-400 bg-slate-900/60 px-1.5 py-0.5 rounded border border-slate-700/50">
+                Início: <strong className="text-slate-300 font-semibold">{formatBRNumber(initMassaMusc, 1)}%</strong>
               </span>
             </div>
-            <span className="text-[10px] text-slate-400 mt-1 truncate">
-              {formatBRNumber(pesoMassaMusc, 1)} kg músculo
-            </span>
+            <div className="mt-2">
+              <div className="flex items-baseline gap-1">
+                <span className="text-xl sm:text-2xl font-black text-teal-300">
+                  {formatBRNumber(currMassaMusc, 1)}%
+                </span>
+              </div>
+              <span className="text-[10px] text-slate-400 truncate block mt-0.5">
+                {formatBRNumber(pesoMassaMusc, 1)} kg músculo
+              </span>
+            </div>
+            <div className="mt-2.5 pt-2 border-t border-slate-700/50 flex items-center justify-between text-xs">
+              <span className="text-[10px] uppercase font-semibold text-slate-400">Variação</span>
+              <span className={`inline-flex items-center gap-0.5 font-bold text-xs ${diffMassaMusc >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                {diffMassaMusc < 0 ? <TrendingDown className="w-3.5 h-3.5" /> : diffMassaMusc > 0 ? <TrendingUp className="w-3.5 h-3.5" /> : null}
+                {diffMassaMusc > 0 ? `+${formatBRNumber(diffMassaMusc, 1)}%` : `${formatBRNumber(diffMassaMusc, 1)}%`}
+              </span>
+            </div>
           </div>
 
-          {/* Card 7: Gordura Visceral */}
-          <div className="bg-slate-800/60 backdrop-blur border border-slate-700/60 p-3 rounded-xl flex flex-col justify-between">
-            <span className="text-[10px] uppercase tracking-wider text-rose-400 font-semibold truncate">
-              VISCERAL
-            </span>
-            <div className="mt-1">
-              <span className="text-lg sm:text-xl font-black text-rose-300">
-                {formatBRNumber(gorduraVisceral, 1)}
+          {/* Card 5: Massa Musc. Esquelética */}
+          <div className="bg-slate-800/70 backdrop-blur border border-cyan-500/30 p-3 sm:p-3.5 rounded-xl flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] uppercase tracking-wider text-cyan-400 font-bold truncate">
+                M. ESQUELÉTICA
+              </span>
+              <span className="text-[10px] text-slate-400 bg-slate-900/60 px-1.5 py-0.5 rounded border border-slate-700/50">
+                Início: <strong className="text-slate-300 font-semibold">{formatBRNumber(initMassaEsq, 1)}%</strong>
               </span>
             </div>
-            <span className="text-[10px] text-slate-400 mt-1 truncate">Nível de gordura</span>
+            <div className="mt-2">
+              <div className="flex items-baseline gap-1">
+                <span className="text-xl sm:text-2xl font-black text-cyan-300">
+                  {formatBRNumber(currMassaEsq, 1)}%
+                </span>
+              </div>
+              <span className="text-[10px] text-slate-400 truncate block mt-0.5">
+                {latestWeight?.pesoMassaMuscEsq ? `${formatBRNumber(latestWeight.pesoMassaMuscEsq, 1)} kg` : '36,3 kg esquelética'}
+              </span>
+            </div>
+            <div className="mt-2.5 pt-2 border-t border-slate-700/50 flex items-center justify-between text-xs">
+              <span className="text-[10px] uppercase font-semibold text-slate-400">Variação</span>
+              <span className={`inline-flex items-center gap-0.5 font-bold text-xs ${diffMassaEsq >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                {diffMassaEsq < 0 ? <TrendingDown className="w-3.5 h-3.5" /> : diffMassaEsq > 0 ? <TrendingUp className="w-3.5 h-3.5" /> : null}
+                {diffMassaEsq > 0 ? `+${formatBRNumber(diffMassaEsq, 1)}%` : `${formatBRNumber(diffMassaEsq, 1)}%`}
+              </span>
+            </div>
+          </div>
+
+          {/* Card 6: Gordura Visceral */}
+          <div className="bg-slate-800/70 backdrop-blur border border-rose-500/30 p-3 sm:p-3.5 rounded-xl flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] uppercase tracking-wider text-rose-400 font-bold truncate">
+                VISCERAL
+              </span>
+              <span className="text-[10px] text-slate-400 bg-slate-900/60 px-1.5 py-0.5 rounded border border-slate-700/50">
+                Início: <strong className="text-slate-300 font-semibold">{formatBRNumber(initVisceral, 1)}</strong>
+              </span>
+            </div>
+            <div className="mt-2">
+              <div className="flex items-baseline gap-1">
+                <span className="text-xl sm:text-2xl font-black text-rose-300">
+                  {formatBRNumber(currVisceral, 1)}
+                </span>
+              </div>
+              <span className="text-[10px] text-slate-400 truncate block mt-0.5">
+                Nível de gordura visceral
+              </span>
+            </div>
+            <div className="mt-2.5 pt-2 border-t border-slate-700/50 flex items-center justify-between text-xs">
+              <span className="text-[10px] uppercase font-semibold text-slate-400">Variação</span>
+              <span className={`inline-flex items-center gap-0.5 font-bold text-xs ${diffVisceral <= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                {diffVisceral < 0 ? <TrendingDown className="w-3.5 h-3.5" /> : diffVisceral > 0 ? <TrendingUp className="w-3.5 h-3.5" /> : null}
+                {diffVisceral > 0 ? `+${formatBRNumber(diffVisceral, 1)}` : formatBRNumber(diffVisceral, 1)}
+              </span>
+            </div>
+          </div>
+
+          {/* Card 7: Água Corporal */}
+          <div className="bg-slate-800/70 backdrop-blur border border-blue-500/30 p-3 sm:p-3.5 rounded-xl flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] uppercase tracking-wider text-blue-400 font-bold truncate">
+                ÁGUA
+              </span>
+              <span className="text-[10px] text-slate-400 bg-slate-900/60 px-1.5 py-0.5 rounded border border-slate-700/50">
+                Início: <strong className="text-slate-300 font-semibold">{formatBRNumber(initAgua, 1)}%</strong>
+              </span>
+            </div>
+            <div className="mt-2">
+              <div className="flex items-baseline gap-1">
+                <span className="text-xl sm:text-2xl font-black text-blue-300">
+                  {formatBRNumber(currAgua, 1)}%
+                </span>
+              </div>
+              <span className="text-[10px] text-slate-400 truncate block mt-0.5">
+                {latestWeight?.pesoAgua ? `${formatBRNumber(latestWeight.pesoAgua, 1)} kg` : '54,4 kg de hidratação'}
+              </span>
+            </div>
+            <div className="mt-2.5 pt-2 border-t border-slate-700/50 flex items-center justify-between text-xs">
+              <span className="text-[10px] uppercase font-semibold text-slate-400">Variação</span>
+              <span className={`inline-flex items-center gap-0.5 font-bold text-xs ${diffAgua >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                {diffAgua < 0 ? <TrendingDown className="w-3.5 h-3.5" /> : diffAgua > 0 ? <TrendingUp className="w-3.5 h-3.5" /> : null}
+                {diffAgua > 0 ? `+${formatBRNumber(diffAgua, 1)}%` : `${formatBRNumber(diffAgua, 1)}%`}
+              </span>
+            </div>
           </div>
 
           {/* Card 8: Metabolismo Basal */}
-          <div className="bg-slate-800/60 backdrop-blur border border-slate-700/60 p-3 rounded-xl flex flex-col justify-between">
-            <span className="text-[10px] uppercase tracking-wider text-purple-400 font-semibold truncate">
-              METABOLISMO
-            </span>
-            <div className="mt-1">
-              <span className="text-lg sm:text-xl font-black text-purple-300">
-                {formatBRNumber(metabolismo, 0)}
+          <div className="bg-slate-800/70 backdrop-blur border border-purple-500/30 p-3 sm:p-3.5 rounded-xl flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] uppercase tracking-wider text-purple-400 font-bold truncate">
+                METABOLISMO
               </span>
-              <span className="text-[9px] text-slate-400 ml-0.5">kcal</span>
+              <span className="text-[10px] text-slate-400 bg-slate-900/60 px-1.5 py-0.5 rounded border border-slate-700/50">
+                Início: <strong className="text-slate-300 font-semibold">{formatBRNumber(initMetabolismo, 0)}</strong>
+              </span>
             </div>
-            <span className="text-[10px] text-slate-400 mt-1 truncate">Gasto diário basal</span>
+            <div className="mt-2">
+              <div className="flex items-baseline gap-1">
+                <span className="text-xl sm:text-2xl font-black text-purple-300">
+                  {formatBRNumber(currMetabolismo, 0)}
+                </span>
+                <span className="text-[10px] text-slate-400">kcal</span>
+              </div>
+              <span className="text-[10px] text-slate-400 truncate block mt-0.5">
+                Taxa metabólica basal
+              </span>
+            </div>
+            <div className="mt-2.5 pt-2 border-t border-slate-700/50 flex items-center justify-between text-xs">
+              <span className="text-[10px] uppercase font-semibold text-slate-400">Variação</span>
+              <span className={`inline-flex items-center gap-0.5 font-bold text-xs ${diffMetabolismo >= 0 ? 'text-emerald-400' : 'text-slate-400'}`}>
+                {diffMetabolismo < 0 ? <TrendingDown className="w-3.5 h-3.5" /> : diffMetabolismo > 0 ? <TrendingUp className="w-3.5 h-3.5" /> : null}
+                {diffMetabolismo > 0 ? `+${formatBRNumber(diffMetabolismo, 0)}` : formatBRNumber(diffMetabolismo, 0)} kcal
+              </span>
+            </div>
           </div>
         </div>
       </div>

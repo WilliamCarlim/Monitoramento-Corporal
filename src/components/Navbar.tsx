@@ -71,25 +71,25 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo & Title */}
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveTab('dashboard')}>
-            <div className="p-2 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-md shadow-emerald-500/20">
+          <div
+            className="flex items-center gap-2.5 cursor-pointer flex-shrink-0 select-none"
+            onClick={() => setActiveTab('dashboard')}
+          >
+            <div className="p-2 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-md shadow-emerald-500/20 flex-shrink-0">
               <Activity className="w-5 h-5" />
             </div>
-            <div>
-              <h1 className="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2">
-                Monitor Corporal
-                <span className="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hidden sm:inline-block">
-                  2026
-                </span>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg sm:text-xl font-black text-white tracking-tight whitespace-nowrap">
+                Will Fit
               </h1>
-              <p className="text-xs text-slate-400 hidden sm:block">
-                Peso, Bioimpedância, Medidas, Cardio, Treinos & Fotos
-              </p>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 whitespace-nowrap">
+                2026
+              </span>
             </div>
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden xl:flex items-center gap-1 bg-slate-800/80 p-1 rounded-xl border border-slate-700/60">
+          <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1 bg-slate-800/80 p-1 rounded-xl border border-slate-700/60">
             <button
               onClick={() => setActiveTab('dashboard')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
@@ -219,7 +219,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       </div>
 
       {/* Mobile Navigation bar at bottom */}
-      <div className="xl:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-1 py-1.5 flex justify-around overflow-x-auto">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-1 py-1.5 flex justify-around overflow-x-auto">
         <button
           onClick={() => setActiveTab('dashboard')}
           className={`flex flex-col items-center gap-0.5 py-1 px-1.5 rounded-lg text-[9px] ${

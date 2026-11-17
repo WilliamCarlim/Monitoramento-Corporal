@@ -2,10 +2,19 @@ import { Env, DEFAULT_SPREADSHEET_ID, getGoogleAccessToken } from './sheets-help
 
 const BASELINE_MEASURES = [
   {
+    id: 'm-0',
+    data: '10/05/2026',
+    pesoAvaliacao: 112.0,
+    gorduraAvaliacao: 40.3,
+    massaGordura: 45.1,
+    massaSemGordura: 66.9,
+    observacoes: 'Avaliação Física Academia Panobianco • Ticket 1038, Máquina 8678, Bariri (Altura: 176 cm, Idade: 34)',
+  },
+  {
     id: 'm-1',
     data: '16/11/2026',
     abdomen: 127,
-    observacoes: 'Medida preliminar com trena na altura do umbigo expirando até ficar sem fôlego',
+    observacoes: 'Medição preliminar com trena na altura do umbigo, soltando o ar até ficar sem fôlego (aguardando fita métrica para medida oficial)',
   },
 ];
 
@@ -38,7 +47,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         env.GOOGLE_PRIVATE_KEY
       );
 
-      const range = encodeURIComponent('Medidas Corporais!A2:P');
+      const range = encodeURIComponent('Medidas Corporais!B6:U');
       const sheetsUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}`;
 
       const res = await fetch(sheetsUrl, {
@@ -72,7 +81,11 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
           coxaEsq: parseNum(row[12]),
           panturrilhaDir: parseNum(row[13]),
           panturrilhaEsq: parseNum(row[14]),
-          observacoes: row[15] || '',
+          pesoAvaliacao: parseNum(row[15]),
+          gorduraAvaliacao: parseNum(row[16]),
+          massaGordura: parseNum(row[17]),
+          massaSemGordura: parseNum(row[18]),
+          observacoes: row[19] || (row.length === 16 ? row[15] : '') || '',
         }));
 
         if (records.length > 0) {

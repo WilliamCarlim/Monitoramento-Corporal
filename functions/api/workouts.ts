@@ -13,6 +13,18 @@ const BASELINE_WORKOUTS = [
     calorias: 356,
     observacoes: '7 exercícios executados • Fast fit • Ficha: Abcde w hipertrofi...',
   },
+  {
+    id: 't-2',
+    data: '17/11/2026',
+    diaSemana: 'terça-feira',
+    contexto: 'Fast fit • 11:59',
+    focoDivisao: 'Quadríceps',
+    duracaoMin: 40,
+    exerciciosCargas: 'Agachamento máquina - 4 séries; Leg press 45° - 4 séries; Cadeira extensora - 4 séries; Panturrilha no leg - 3 séries',
+    esforcoPse: 8,
+    calorias: 277,
+    observacoes: 'Treino de pernas / quadríceps executado • Fast fit • 11:59',
+  },
 ];
 
 export const onRequestGet: PagesFunction<Env> = async (context) => {

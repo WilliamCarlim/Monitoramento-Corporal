@@ -78,9 +78,9 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
         csvContent += `${w.data};${w.diaSemana};${w.contexto};${formatBRNumber(w.peso, 3)};${formatBRNumber(w.variacaoAnterior, 3)};${formatBRNumber(w.variacaoInicial, 3)};${formatBRNumber(w.imc, 2)};${formatBRNumber(w.gorduraPercent, 1)};${formatBRNumber(w.pesoGordura, 1)};${formatBRNumber(w.massaMuscEsqPercent, 1)};${formatBRNumber(w.pesoMassaMuscEsq, 1)};${formatBRNumber(w.massaMuscularPercent, 1)};${formatBRNumber(w.pesoMassaMuscular, 1)};${formatBRNumber(w.aguaPercent, 1)};${formatBRNumber(w.pesoAgua, 1)};${formatBRNumber(w.gorduraVisceral, 1)};${formatBRNumber(w.metabolismo, 0)};${formatBRNumber(w.imcApp, 1)};${w.alturaApp || ''};${w.idadeApp || ''};${formatBRNumber(w.melhorPeso30d, 2)};"${w.observacoes || ''}"\r\n`;
       });
     } else if (activeSubTab === 'measures') {
-      csvContent += 'Data;Pescoco;Ombro;Torax;Cintura;Abdomen;Quadril;Braco Dir;Braco Esq;Antebraco Dir;Antebraco Esq;Coxa Dir;Coxa Esq;Panturrilha Dir;Panturrilha Esq;Observacoes\r\n';
+      csvContent += 'Data;Pescoco;Ombro;Torax;Cintura;Abdomen;Quadril;Braco Dir;Braco Esq;Antebraco Dir;Antebraco Esq;Coxa Dir;Coxa Esq;Panturrilha Dir;Panturrilha Esq;Peso Avaliacao (kg);Gordura Avaliacao (%);Massa de Gordura (kg);Massa Sem Gordura (kg);Observacoes\r\n';
       filteredMeasures.forEach((m) => {
-        csvContent += `${m.data};${m.pescoco || ''};${m.ombro || ''};${m.torax || ''};${m.cintura || ''};${m.abdomen || ''};${m.quadril || ''};${m.bracoDir || ''};${m.bracoEsq || ''};${m.antebracoDir || ''};${m.antebracoEsq || ''};${m.coxaDir || ''};${m.coxaEsq || ''};${m.panturrilhaDir || ''};${m.panturrilhaEsq || ''};"${m.observacoes || ''}"\r\n`;
+        csvContent += `${m.data};${m.pescoco || ''};${m.ombro || ''};${m.torax || ''};${m.cintura || ''};${m.abdomen || ''};${m.quadril || ''};${m.bracoDir || ''};${m.bracoEsq || ''};${m.antebracoDir || ''};${m.antebracoEsq || ''};${m.coxaDir || ''};${m.coxaEsq || ''};${m.panturrilhaDir || ''};${m.panturrilhaEsq || ''};${m.pesoAvaliacao ? formatBRNumber(m.pesoAvaliacao, 1) : ''};${m.gorduraAvaliacao ? formatBRNumber(m.gorduraAvaliacao, 1) : ''};${m.massaGordura ? formatBRNumber(m.massaGordura, 1) : ''};${m.massaSemGordura ? formatBRNumber(m.massaSemGordura, 1) : ''};"${m.observacoes || ''}"\r\n`;
       });
     } else if (activeSubTab === 'cardios') {
       csvContent += 'Data;Dia da Semana;Horario / Contexto;Modalidade;Local / Origem;Distancia (km);Tempo de Movimentacao;Passos;Elevacao (m);Gasto Calorico Estimado (kcal);Observacoes\r\n';
@@ -304,13 +304,17 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
                   <th className="py-3 px-3">Antebraço (D/E)</th>
                   <th className="py-3 px-3">Coxa (D/E)</th>
                   <th className="py-3 px-3">Panturrilha (D/E)</th>
+                  <th className="py-3 px-3 text-indigo-400 font-bold">Peso Aval.</th>
+                  <th className="py-3 px-3 text-amber-400 font-bold">Gordura Aval. (%)</th>
+                  <th className="py-3 px-3 text-rose-400">Massa Gord.</th>
+                  <th className="py-3 px-3 text-teal-400">Massa Magra</th>
                   <th className="py-3 px-3">Observações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800 whitespace-nowrap">
                 {filteredMeasures.length === 0 ? (
                   <tr>
-                    <td colSpan={12} className="py-8 text-center text-slate-500">
+                    <td colSpan={16} className="py-8 text-center text-slate-500">
                       Nenhum registro de medidas encontrado.
                     </td>
                   </tr>
@@ -328,6 +332,10 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
                       <td className="py-2.5 px-3">{m.antebracoDir || m.antebracoEsq ? `${formatBRNumber(m.antebracoDir, 1)} / ${formatBRNumber(m.antebracoEsq, 1)}` : '-'}</td>
                       <td className="py-2.5 px-3">{m.coxaDir || m.coxaEsq ? `${formatBRNumber(m.coxaDir, 1)} / ${formatBRNumber(m.coxaEsq, 1)}` : '-'}</td>
                       <td className="py-2.5 px-3">{m.panturrilhaDir || m.panturrilhaEsq ? `${formatBRNumber(m.panturrilhaDir, 1)} / ${formatBRNumber(m.panturrilhaEsq, 1)}` : '-'}</td>
+                      <td className="py-2.5 px-3 font-bold text-indigo-300">{m.pesoAvaliacao ? `${formatBRNumber(m.pesoAvaliacao, 1)} kg` : '-'}</td>
+                      <td className="py-2.5 px-3 font-bold text-amber-300">{m.gorduraAvaliacao ? `${formatBRNumber(m.gorduraAvaliacao, 1)}%` : '-'}</td>
+                      <td className="py-2.5 px-3 text-rose-300">{m.massaGordura ? `${formatBRNumber(m.massaGordura, 1)} kg` : '-'}</td>
+                      <td className="py-2.5 px-3 text-teal-300">{m.massaSemGordura ? `${formatBRNumber(m.massaSemGordura, 1)} kg` : '-'}</td>
                       <td className="py-2.5 px-3 text-xs text-slate-400 max-w-sm truncate" title={m.observacoes}>{m.observacoes || '-'}</td>
                     </tr>
                   ))

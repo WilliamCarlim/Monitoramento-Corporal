@@ -27,6 +27,7 @@ export interface WeightRecord {
 export interface MeasureRecord {
   id?: string;
   data: string; // DD/MM/AAAA
+  // Circunferências (cm)
   pescoco?: number;
   ombro?: number;
   torax?: number;
@@ -41,6 +42,11 @@ export interface MeasureRecord {
   coxaEsq?: number;
   panturrilhaDir?: number;
   panturrilhaEsq?: number;
+  // Bioimpedância da Avaliação Mensal / Balança Profissional (Academia/Clínica)
+  pesoAvaliacao?: number; // ex: 112.0 kg
+  gorduraAvaliacao?: number; // ex: 40.3%
+  massaGordura?: number; // ex: 45.1 kg
+  massaSemGordura?: number; // ex: 66.9 kg
   observacoes?: string;
 }
 

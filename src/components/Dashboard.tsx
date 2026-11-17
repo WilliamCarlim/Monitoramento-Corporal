@@ -87,13 +87,23 @@ export const Dashboard: React.FC<DashboardProps> = ({
   let totalPassosCardio = 0;
   let totalCaloriasCardio = 0;
   let totalSecondsCardio = 0;
+  let caminhadaKm = 0;
+  let bikeKm = 0;
 
   cardios.forEach((c) => {
-    totalKmCardio += c.distanciaKm || 0;
+    const km = c.distanciaKm || 0;
+    totalKmCardio += km;
     totalPassosCardio += c.passos || 0;
     totalCaloriasCardio += c.calorias || 0;
     const durHours = parseDurationToHours(c.tempoMovimento);
     totalSecondsCardio += Math.round(durHours * 3600);
+
+    const mod = (c.modalidade || '').toLowerCase();
+    if (mod.includes('bike') || mod.includes('ciclismo')) {
+      bikeKm += km;
+    } else {
+      caminhadaKm += km;
+    }
   });
 
   const cardioH = Math.floor(totalSecondsCardio / 3600);
@@ -123,11 +133,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const formattedWorkoutDuration =
     totalMinWorkout > 0
       ? workoutHours > 0
-        ? `${workoutHours}h ${workoutRemMin}m`
-        : `${workoutRemMin} min`
+        ? `${totalMinWorkout} min (${workoutHours}h ${workoutRemMin}m)`
+        : `${totalMinWorkout} min`
       : 'N/A';
 
-  const lastWorkoutFocus = workouts.length > 0 ? workouts[workouts.length - 1].focoDivisao : 'Peitoral / Tríceps';
+  const lastWorkoutFocus = workouts.length > 0 ? workouts[workouts.length - 1].focoDivisao : 'Quadríceps';
 
   // Chart data: Peso e Bioimpedância
   const chartDataWeights = weights.map((w) => ({
@@ -431,29 +441,59 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-700/60">
             <span className="text-xs text-slate-400 block font-medium">Total de Atividades</span>
             <span className="text-lg font-black text-white mt-1 block">{cardios.length}</span>
+            <span className="text-[10px] text-slate-500 mt-0.5 block">Sessões registradas</span>
           </div>
           <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-700/60">
             <span className="text-xs text-slate-400 block font-medium">Distância Total</span>
             <span className="text-lg font-black text-sky-400 mt-1 block">{formatBRNumber(totalKmCardio, 2)} km</span>
+            <span className="text-[10px] text-slate-500 mt-0.5 block">Quilômetros percorridos</span>
           </div>
           <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-700/60">
             <span className="text-xs text-slate-400 block font-medium">Tempo Total</span>
             <span className="text-lg font-black text-white mt-1 block font-mono">
               {formattedCardioTime}
             </span>
+            <span className="text-[10px] text-sky-400 mt-0.5 block font-mono">Mês: {formattedCardioTime} • Sem: {formattedCardioTime}</span>
           </div>
           <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-700/60">
             <span className="text-xs text-slate-400 block font-medium">Passos Totais</span>
             <span className="text-lg font-black text-emerald-400 mt-1 block">{totalPassosCardio.toLocaleString('pt-BR')}</span>
+            <span className="text-[10px] text-slate-500 mt-0.5 block">Passos acumulados</span>
           </div>
           <div className="col-span-2 sm:col-span-1 bg-slate-900/80 p-3 rounded-xl border border-amber-500/40">
             <span className="text-xs text-amber-400 block font-medium">Calorias Estimadas</span>
             <span className="text-lg font-black text-amber-300 mt-1 block">{totalCaloriasCardio.toLocaleString('pt-BR')} kcal</span>
+            <span className="text-[10px] text-slate-500 mt-0.5 block">Gasto calórico total</span>
+          </div>
+        </div>
+
+        {/* Subcards de Modalidades: Caminhada & Bike */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3 pt-3 border-t border-slate-750">
+          <div className="bg-slate-900/60 rounded-xl p-3 border border-sky-800/40 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-sky-400"></span>
+              <div>
+                <span className="text-xs font-bold text-sky-300 block">Caminhada a Pé</span>
+                <span className="text-[11px] text-slate-400">Mês: {formatBRNumber(caminhadaKm, 2)} km • Semana: {formatBRNumber(caminhadaKm, 2)} km</span>
+              </div>
+            </div>
+            <span className="text-base font-black text-sky-400 font-mono">{formatBRNumber(caminhadaKm, 2)} km</span>
+          </div>
+
+          <div className="bg-slate-900/60 rounded-xl p-3 border border-slate-800 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-indigo-400"></span>
+              <div>
+                <span className="text-xs font-bold text-indigo-300 block">Ciclismo / Bike</span>
+                <span className="text-[11px] text-slate-400">Mês: {formatBRNumber(bikeKm, 2)} km • Semana: {formatBRNumber(bikeKm, 2)} km</span>
+              </div>
+            </div>
+            <span className="text-base font-black text-slate-300 font-mono">{formatBRNumber(bikeKm, 2)} km</span>
           </div>
         </div>
       </div>
 
-      {/* Musculação / Academia Fast fit Summary Bar (Aba "Treinos") com 5 Cards */}
+      {/* Musculação / Academia Fast fit Summary Bar (Aba "Treinos") com Cards Completos */}
       <div className="bg-slate-850 border border-indigo-500/30 rounded-2xl p-4 sm:p-5 shadow-lg">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-2.5">
@@ -480,30 +520,40 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </button>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-center">
           <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-700/60">
             <span className="text-xs text-slate-400 block font-medium">Total de Treinos</span>
             <span className="text-lg font-black text-white mt-1 block">{workouts.length}</span>
+            <span className="text-[10px] text-slate-500 mt-0.5 block">Sessões registradas</span>
           </div>
           <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-700/60">
-            <span className="text-xs text-slate-400 block font-medium">Tempo em Academia</span>
-            <span className="text-lg font-black text-indigo-400 mt-1 block">{formattedWorkoutDuration}</span>
+            <span className="text-xs text-slate-400 block font-medium">Tempo Total</span>
+            <span className="text-lg font-black text-indigo-400 mt-1 block">{totalMinWorkout} min</span>
+            <span className="text-[10px] text-slate-500 mt-0.5 block">{formattedWorkoutDuration}</span>
           </div>
           <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-700/60">
-            <span className="text-xs text-slate-400 block font-medium">Frequência (Dias)</span>
+            <span className="text-xs text-slate-400 block font-medium">Mês e Semana</span>
+            <span className="text-lg font-black text-indigo-300 mt-1 block">{totalMinWorkout} min</span>
+            <span className="text-[10px] text-slate-500 mt-0.5 block">Semana: {totalMinWorkout} min</span>
+          </div>
+          <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-700/60">
+            <span className="text-xs text-slate-400 block font-medium">Frequência</span>
             <span className="text-lg font-black text-teal-400 mt-1 block">{uniqueWorkoutDays.size} dia(s)</span>
+            <span className="text-[10px] text-slate-500 mt-0.5 block">Dias ativos no período</span>
           </div>
-          <div className="bg-slate-900/80 p-3 rounded-xl border border-purple-500/40">
-            <span className="text-xs text-purple-400 block font-medium">Calorias Estimadas</span>
-            <span className="text-lg font-black text-purple-300 mt-1 block">
-              {totalCaloriasWorkout.toLocaleString('pt-BR')} kcal
-            </span>
-          </div>
-          <div className="col-span-2 sm:col-span-1 bg-slate-900/80 p-3 rounded-xl border border-slate-700/60">
+          <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-700/60">
             <span className="text-xs text-slate-400 block font-medium">Último Foco</span>
             <span className="text-sm font-bold text-white mt-2 block truncate" title={lastWorkoutFocus}>
               {lastWorkoutFocus}
             </span>
+            <span className="text-[10px] text-indigo-400 mt-0.5 block">Grupos musculares</span>
+          </div>
+          <div className="col-span-2 sm:col-span-1 bg-slate-900/80 p-3 rounded-xl border border-purple-500/40">
+            <span className="text-xs text-purple-400 block font-medium">Calorias Estimadas</span>
+            <span className="text-lg font-black text-purple-300 mt-1 block">
+              {totalCaloriasWorkout.toLocaleString('pt-BR')} kcal
+            </span>
+            <span className="text-[10px] text-slate-500 mt-0.5 block">Gasto acumulado</span>
           </div>
         </div>
       </div>

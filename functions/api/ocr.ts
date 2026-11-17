@@ -98,25 +98,38 @@ Retorne EXCLUSIVAMENTE um objeto JSON válido, sem crases de código markdown:
   "contexto": string ou null
 }`;
   } else {
-    promptInstruction = `Você é um especialista em leitura OCR de anotações e tabelas de medidas corporais (circunferências em cm).
-Analise a imagem e extraia os valores em cm com precisão.
+    promptInstruction = `Você é um especialista em leitura OCR de anotações, fichas de avaliação física, tickets de balança/bioimpedância (InBody, Tanita, Panobianco, etc.) e tabelas de medidas corporais.
+Analise a imagem com máxima precisão e extraia tanto as circunferências em cm quanto os dados de bioimpedância da avaliação mensal, se presentes:
+1. Circunferências corporais em cm (pescoco, ombro, torax, cintura, abdomen, quadril, bracoDir, bracoEsq, antebracoDir, antebracoEsq, coxaDir, coxaEsq, panturrilhaDir, panturrilhaEsq).
+2. Bioimpedância da Avaliação (se print de ticket/balança de academia):
+   - pesoAvaliacao: peso em kg (ex: 112.0)
+   - gorduraAvaliacao: percentual de gordura % (ex: 40.3)
+   - massaGordura: peso da gordura em kg (ex: 45.1)
+   - massaSemGordura: massa magra/livre de gordura em kg (ex: 66.9)
+3. "observacoes": informações adicionais como academia, máquina, ticket, altura, idade (ex: "Academia Panobianco • Ticket 1038, Máquina 8678, Bariri").
+4. "data": data no formato DD/MM/AAAA se visível.
+
 Retorne EXCLUSIVAMENTE um objeto JSON válido, sem crases:
 {
-  "data": string (DD/MM/AAAA se visível),
-  "pescoco": number,
-  "ombro": number,
-  "torax": number,
-  "cintura": number,
-  "abdomen": number,
-  "quadril": number,
-  "bracoDir": number,
-  "bracoEsq": number,
-  "antebracoDir": number,
-  "antebracoEsq": number,
-  "coxaDir": number,
-  "coxaEsq": number,
-  "panturrilhaDir": number,
-  "panturrilhaEsq": number,
+  "data": string ou null,
+  "pescoco": number ou null,
+  "ombro": number ou null,
+  "torax": number ou null,
+  "cintura": number ou null,
+  "abdomen": number ou null,
+  "quadril": number ou null,
+  "bracoDir": number ou null,
+  "bracoEsq": number ou null,
+  "antebracoDir": number ou null,
+  "antebracoEsq": number ou null,
+  "coxaDir": number ou null,
+  "coxaEsq": number ou null,
+  "panturrilhaDir": number ou null,
+  "panturrilhaEsq": number ou null,
+  "pesoAvaliacao": number ou null,
+  "gorduraAvaliacao": number ou null,
+  "massaGordura": number ou null,
+  "massaSemGordura": number ou null,
   "observacoes": string
 }`;
   }

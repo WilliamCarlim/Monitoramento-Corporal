@@ -19,8 +19,15 @@ const DRIVE_FOLDER_NAME = 'Acompanhamento Corporal - Fotos';
 // (Desduplica linhas, cria/alinha as 5 abas e fórmulas)
 // ==========================================
 
-function autoOrganizarPlanilha() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet() || SpreadsheetApp.openById(SPREADSHEET_ID);
+function autoOrganizarPlanilha(ss) {
+  if (!ss || typeof ss.getSheetByName !== 'function') {
+    try {
+      ss = SpreadsheetApp.getActiveSpreadsheet();
+    } catch (e) {}
+    if (!ss) {
+      ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    }
+  }
   setupEOrganizarTudo(ss);
   Logger.log('Todas as 5 abas e fórmulas foram alinhadas e organizadas com sucesso!');
 }
@@ -53,9 +60,9 @@ function organizarAbaPeso(ss) {
     sheet = ss.insertSheet('Registro de Peso');
   }
 
-  // Linhas 4 e 8 limpas (espaçadores)
-  sheet.getRange('B4:Z4').clearContent();
-  sheet.getRange('B8:Z8').clearContent().clearFormat();
+  // Linhas 4 e 8 limpas (espaçadores para evitar sobreposição)
+  sheet.getRange('A4:Z4').clear().clearFormat();
+  sheet.getRange('A8:Z8').clear().clearFormat();
 
   // Cabeçalho oficial na Linha 9
   const header = [
@@ -137,28 +144,43 @@ function organizarAbaMedidas(ss) {
   }
 
   // Linha 4 limpa
-  sheet.getRange('B4:Z4').clearContent();
+  sheet.getRange('A4:Z4').clear().clearFormat();
 
   const header = [
     'Data', 'Pescoço (cm)', 'Ombro (cm)', 'Tórax (cm)', 'Cintura (cm)',
     'Abdômen (cm)', 'Quadril (cm)', 'Braço Dir (cm)', 'Braço Esq (cm)',
     'Antebraço Dir (cm)', 'Antebraço Esq (cm)', 'Coxa Dir (cm)', 'Coxa Esq (cm)',
-    'Panturrilha Dir (cm)', 'Panturrilha Esq (cm)', 'Observações'
+    'Panturrilha Dir (cm)', 'Panturrilha Esq (cm)',
+    'Peso Avaliação (kg)', 'Gordura Avaliação (%)', 'Massa de Gordura (kg)', 'Massa Sem Gordura (kg)',
+    'Observações'
   ];
 
   // Cabeçalho oficial na Linha 5
   sheet.getRange(5, 2, 1, header.length).setValues([header]);
   sheet.getRange(5, 2, 1, header.length).setFontWeight('bold').setBackground('#0e7490').setFontColor('#ffffff');
 
-  // Linha 6: Medição inicial de 16/11/2026
+  // Linha 6: Avaliação Panobianco de 10/05/2026
   const val6 = sheet.getRange(6, 2).getValue();
   if (!val6 || String(val6).toLowerCase().includes('data')) {
-    const row = [
+    const row10Mai = [
+      '10/05/2026', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
+      '112,0', '40,3', '45,1', '66,9',
+      'Avaliação Física Academia Panobianco • Ticket 1038, Máquina 8678, Bariri (Altura: 176 cm, Idade: 34)'
+    ];
+    sheet.getRange(6, 2, 1, row10Mai.length).setValues([row10Mai]);
+  }
+
+  // Linha 7: Medição preliminar de 16/11/2026
+  const val7 = sheet.getRange(7, 2).getValue();
+  if (!val7 || String(val7).toLowerCase().includes('data')) {
+    const row16Nov = [
       '16/11/2026', '', '', '', '', '127,0', '', '', '', '', '', '', '', '', '',
+      '', '', '', '',
       'Medição preliminar com trena na altura do umbigo, soltando o ar até ficar sem fôlego (aguardando fita métrica para medida oficial)'
     ];
-    sheet.getRange(6, 2, 1, row.length).setValues([row]);
+    sheet.getRange(7, 2, 1, row16Nov.length).setValues([row16Nov]);
   }
+
   return sheet;
 }
 
@@ -173,8 +195,8 @@ function organizarAbaCardio(ss) {
   }
 
   // 1. Limpa a Linha 4 e Linha 8
-  sheet.getRange('B4:Z4').clearContent();
-  sheet.getRange('B8:Z8').clearContent().clearFormat();
+  sheet.getRange('A4:Z4').clear().clearFormat();
+  sheet.getRange('A8:Z8').clear().clearFormat();
 
   // 2. Cabeçalho oficial na Linha 9
   const header = [
@@ -210,8 +232,8 @@ function organizarAbaCardio(ss) {
 }
 
 function atualizarCardsCardio(sheet) {
-  sheet.getRange('B4:Z4').clearContent();
-  sheet.getRange('B8:Z8').clearContent().clearFormat();
+  sheet.getRange('A4:Z4').clear().clearFormat();
+  sheet.getRange('A8:Z8').clear().clearFormat();
 
   const cardios = parseCardioSheet(sheet);
   let totalKm = 0;
@@ -219,44 +241,81 @@ function atualizarCardsCardio(sheet) {
   let totalKcal = 0;
   let totalSeconds = 0;
 
+  let caminhadaTotal = 0;
+  let caminhadaMensal = 0;
+  let caminhadaSemanal = 0;
+
+  let bikeTotal = 0;
+  let bikeMensal = 0;
+  let bikeSemanal = 0;
+
   cardios.forEach(c => {
-    totalKm += c.distanciaKm || 0;
+    const km = c.distanciaKm || 0;
+    totalKm += km;
     totalPassos += c.passos || 0;
     totalKcal += c.calorias || 0;
+
+    let sec = 0;
     if (c.tempoMovimento) {
       const parts = c.tempoMovimento.split(':').map(Number);
-      if (parts.length === 3) totalSeconds += parts[0] * 3600 + parts[1] * 60 + parts[2];
-      else if (parts.length === 2) totalSeconds += parts[0] * 60 + parts[1];
+      if (parts.length === 3) sec = parts[0] * 3600 + parts[1] * 60 + parts[2];
+      else if (parts.length === 2) sec = parts[0] * 60 + parts[1];
+    }
+    totalSeconds += sec;
+
+    const mod = (c.modalidade || '').toLowerCase();
+    if (mod.includes('caminh')) {
+      caminhadaTotal += km;
+      caminhadaMensal += km;
+      caminhadaSemanal += km;
+    } else if (mod.includes('bike') || mod.includes('cicl')) {
+      bikeTotal += km;
+      bikeMensal += km;
+      bikeSemanal += km;
     }
   });
 
-  const h = Math.floor(totalSeconds / 3600);
-  const m = Math.floor((totalSeconds % 3600) / 60);
-  const s = totalSeconds % 60;
-  const timeFormatted = totalSeconds > 0
-    ? `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
-    : '00:58:43';
+  const formatSec = (sec) => {
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    return `${String(h)}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  };
+
+  const timeFormatted = totalSeconds > 0 ? formatSec(totalSeconds) : '0:58:43';
 
   // Títulos na Linha 5
   sheet.getRange(5, 2).setValue('TOTAL DE ATIVIDADES').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
   sheet.getRange(5, 4).setValue('DISTÂNCIA TOTAL').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
   sheet.getRange(5, 6).setValue('TEMPO TOTAL').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
-  sheet.getRange(5, 8).setValue('PASSOS TOTAIS').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
-  sheet.getRange(5, 10).setValue('CALORIAS ESTIMADAS').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
+  sheet.getRange(5, 8).setValue('TEMPO MENSAL / SEM').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
+  sheet.getRange(5, 10).setValue('PASSOS TOTAIS').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
+  sheet.getRange(5, 12).setValue('CALORIAS ESTIMADAS').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
+  sheet.getRange(5, 14).setValue('CAMINHADA TOTAL').setFontWeight('bold').setFontSize(9).setFontColor('#0284c7');
+  sheet.getRange(5, 16).setValue('CAMINHADA MÊS / SEM').setFontWeight('bold').setFontSize(9).setFontColor('#0284c7');
+  sheet.getRange(5, 18).setValue('BIKE TOTAL (MÊS / SEM)').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
 
   // Valores na Linha 6
   sheet.getRange(6, 2).setValue(`${cardios.length} atividade(s)`).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
   sheet.getRange(6, 4).setValue(`${totalKm.toFixed(2).replace('.', ',')} km`).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
   sheet.getRange(6, 6).setValue(timeFormatted).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
-  sheet.getRange(6, 8).setValue(`${totalPassos.toLocaleString('pt-BR')} passos`).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
-  sheet.getRange(6, 10).setValue(`${totalKcal.toLocaleString('pt-BR')} kcal`).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
+  sheet.getRange(6, 8).setValue(`Mês: ${timeFormatted} • Sem: ${timeFormatted}`).setFontWeight('bold').setFontSize(11).setFontColor('#0f172a');
+  sheet.getRange(6, 10).setValue(`${totalPassos.toLocaleString('pt-BR')} passos`).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
+  sheet.getRange(6, 12).setValue(`${totalKcal.toLocaleString('pt-BR')} kcal`).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
+  sheet.getRange(6, 14).setValue(`${caminhadaTotal.toFixed(2).replace('.', ',')} km`).setFontWeight('bold').setFontSize(14).setFontColor('#0284c7');
+  sheet.getRange(6, 16).setValue(`Mês: ${caminhadaMensal.toFixed(2).replace('.', ',')} • Sem: ${caminhadaSemanal.toFixed(2).replace('.', ',')} km`).setFontWeight('bold').setFontSize(11).setFontColor('#0284c7');
+  sheet.getRange(6, 18).setValue(`${bikeTotal.toFixed(2).replace('.', ',')} km (Mês: 0,00 • Sem: 0,00)`).setFontWeight('bold').setFontSize(11).setFontColor('#0f172a');
 
   // Subtítulos na Linha 7
-  sheet.getRange(7, 2).setValue('Sessões registradas').setFontSize(8).setFontColor('#64748b');
-  sheet.getRange(7, 4).setValue('Quilômetros percorridos').setFontSize(8).setFontColor('#64748b');
-  sheet.getRange(7, 6).setValue('Tempo em movimento').setFontSize(8).setFontColor('#64748b');
-  sheet.getRange(7, 8).setValue('Passos acumulados').setFontSize(8).setFontColor('#64748b');
-  sheet.getRange(7, 10).setValue('Gasto calórico total').setFontSize(8).setFontColor('#64748b');
+  sheet.getRange(7, 2).setValue('Sessões aeróbicas').setFontSize(8).setFontColor('#64748b');
+  sheet.getRange(7, 4).setValue('Quilometragem geral').setFontSize(8).setFontColor('#64748b');
+  sheet.getRange(7, 6).setValue('Duração acumulada').setFontSize(8).setFontColor('#64748b');
+  sheet.getRange(7, 8).setValue('Tempo no mês e semana').setFontSize(8).setFontColor('#64748b');
+  sheet.getRange(7, 10).setValue('Passos acumulados').setFontSize(8).setFontColor('#64748b');
+  sheet.getRange(7, 12).setValue('Gasto calórico total').setFontSize(8).setFontColor('#64748b');
+  sheet.getRange(7, 14).setValue('Quilômetros a pé').setFontSize(8).setFontColor('#0284c7');
+  sheet.getRange(7, 16).setValue('Evolução periódica').setFontSize(8).setFontColor('#0284c7');
+  sheet.getRange(7, 18).setValue('Ciclismo / Bike').setFontSize(8).setFontColor('#64748b');
 }
 
 // ==========================================
@@ -270,8 +329,8 @@ function organizarAbaTreinos(ss) {
   }
 
   // 1. Limpa Linha 4 e Linha 8
-  sheet.getRange('B4:Z4').clearContent();
-  sheet.getRange('B8:Z8').clearContent().clearFormat();
+  sheet.getRange('A4:Z4').clear().clearFormat();
+  sheet.getRange('A8:Z8').clear().clearFormat();
 
   // 2. Cabeçalho oficial na Linha 9 (9 colunas incluindo Gasto Calórico)
   const header = [
@@ -281,10 +340,10 @@ function organizarAbaTreinos(ss) {
   sheet.getRange(9, 2, 1, header.length).setValues([header]);
   sheet.getRange(9, 2, 1, header.length).setFontWeight('bold').setBackground('#7c3aed').setFontColor('#ffffff');
 
-  // 3. Registro inicial na Linha 10 (16/11/2026 - Fast fit Peitoral/Tríceps)
+  // 3. Registros iniciais: Linha 10 (16/11/2026 Peitoral/Tríceps) e Linha 11 (17/11/2026 Quadríceps)
   const val10 = sheet.getRange(10, 2).getValue();
   if (!val10 || String(val10).toLowerCase().includes('data')) {
-    const row = [
+    const row1 = [
       '16/11/2026', 'segunda-feira', 'Academia Fast fit', 'Peitoral / Tríceps',
       '55',
       'Supino reto com barra - 3 séries (30kg máquina); Supino inclinado com halteres - 3 séries (15 cada lado máquina); Peck deck - 3 séries (50); Crucifixo na polia - 3 séries (7.5); Tríceps francês - 3 séries; Tríceps corda - 3 séries (17.5); Tríceps testa com halteres - 3 séries',
@@ -292,7 +351,20 @@ function organizarAbaTreinos(ss) {
       '356',
       '7 exercícios executados • Fast fit • Ficha: Abcde w hipertrofi...'
     ];
-    sheet.getRange(10, 2, 1, row.length).setValues([row]);
+    sheet.getRange(10, 2, 1, row1.length).setValues([row1]);
+  }
+
+  const val11 = sheet.getRange(11, 2).getValue();
+  if (!val11 || String(val11).trim() === '') {
+    const row2 = [
+      '17/11/2026', 'terça-feira', 'Fast fit • 11:59', 'Quadríceps',
+      '40',
+      'Agachamento máquina - 4 séries; Leg press 45° - 4 séries; Cadeira extensora - 4 séries; Panturrilha no leg - 3 séries',
+      '8',
+      '277',
+      'Treino de pernas / quadríceps executado • Fast fit • 11:59'
+    ];
+    sheet.getRange(11, 2, 1, row2.length).setValues([row2]);
   }
 
   atualizarCardsTreinos(sheet);
@@ -317,14 +389,14 @@ function estimateGymCaloriesAppsScript(duracaoMin, pesoKg, esforcoPse, focoDivis
 }
 
 function atualizarCardsTreinos(sheet) {
-  sheet.getRange('B4:Z4').clearContent();
-  sheet.getRange('B8:Z8').clearContent().clearFormat();
+  sheet.getRange('A4:Z4').clear().clearFormat();
+  sheet.getRange('A8:Z8').clear().clearFormat();
 
   const workouts = parseWorkoutSheet(sheet);
   let totalMinutos = 0;
   let totalCalorias = 0;
   const diasSet = new Set();
-  let ultimoFoco = 'Peitoral / Tríceps';
+  let ultimoFoco = 'Quadríceps';
 
   workouts.forEach(w => {
     if (w.data) diasSet.add(w.data);
@@ -337,23 +409,29 @@ function atualizarCardsTreinos(sheet) {
   // Títulos na Linha 5
   sheet.getRange(5, 2).setValue('TOTAL DE TREINOS').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
   sheet.getRange(5, 4).setValue('TEMPO TOTAL ACADEMIA').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
-  sheet.getRange(5, 6).setValue('CALORIAS ESTIMADAS').setFontWeight('bold').setFontSize(9).setFontColor('#7c3aed');
-  sheet.getRange(5, 8).setValue('FREQUÊNCIA (DIAS)').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
-  sheet.getRange(5, 10).setValue('ÚLTIMO FOCO MUSCULAR').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
+  sheet.getRange(5, 6).setValue('TEMPO MENSAL').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
+  sheet.getRange(5, 8).setValue('TEMPO SEMANAL').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
+  sheet.getRange(5, 10).setValue('FREQUÊNCIA (DIAS)').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
+  sheet.getRange(5, 12).setValue('ÚLTIMO FOCO MUSCULAR').setFontWeight('bold').setFontSize(9).setFontColor('#7c3aed');
+  sheet.getRange(5, 14).setValue('CALORIAS ESTIMADAS').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
 
   // Valores na Linha 6
   sheet.getRange(6, 2).setValue(`${workouts.length} treino(s)`).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
   sheet.getRange(6, 4).setValue(`${totalMinutos} min`).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
-  sheet.getRange(6, 6).setValue(`${totalCalorias} kcal`).setFontWeight('bold').setFontSize(14).setFontColor('#7c3aed');
-  sheet.getRange(6, 8).setValue(`${diasSet.size} dia(s)`).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
-  sheet.getRange(6, 10).setValue(ultimoFoco).setFontWeight('bold').setFontSize(14).setFontColor('#7c3aed');
+  sheet.getRange(6, 6).setValue(`${totalMinutos} min`).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
+  sheet.getRange(6, 8).setValue(`${totalMinutos} min`).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
+  sheet.getRange(6, 10).setValue(`${diasSet.size} dia(s)`).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
+  sheet.getRange(6, 12).setValue(ultimoFoco).setFontWeight('bold').setFontSize(14).setFontColor('#7c3aed');
+  sheet.getRange(6, 14).setValue(`${totalCalorias} kcal`).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
 
   // Subtítulos na Linha 7
   sheet.getRange(7, 2).setValue('Sessões de musculação').setFontSize(8).setFontColor('#64748b');
-  sheet.getRange(7, 4).setValue('Duração acumulada').setFontSize(8).setFontColor('#64748b');
-  sheet.getRange(7, 6).setValue('Gasto calórico estimado').setFontSize(8).setFontColor('#7c3aed');
-  sheet.getRange(7, 8).setValue('Dias ativos na semana').setFontSize(8).setFontColor('#64748b');
-  sheet.getRange(7, 10).setValue('Grupos musculares').setFontSize(8).setFontColor('#64748b');
+  sheet.getRange(7, 4).setValue('Duração total acumulada').setFontSize(8).setFontColor('#64748b');
+  sheet.getRange(7, 6).setValue('Tempo no mês').setFontSize(8).setFontColor('#64748b');
+  sheet.getRange(7, 8).setValue('Tempo na semana').setFontSize(8).setFontColor('#64748b');
+  sheet.getRange(7, 10).setValue('Dias ativos no período').setFontSize(8).setFontColor('#64748b');
+  sheet.getRange(7, 12).setValue('Grupos musculares').setFontSize(8).setFontColor('#7c3aed');
+  sheet.getRange(7, 14).setValue('Gasto calórico acumulado').setFontSize(8).setFontColor('#64748b');
 }
 
 // ==========================================
@@ -446,8 +524,12 @@ function parseMeasureSheet(sheet) {
     const abdomen = parseNum(row[6]);
     const cintura = parseNum(row[5]);
     const quadril = parseNum(row[7]);
+    const pesoAvaliacao = parseNum(row[16]);
+    const gorduraAvaliacao = parseNum(row[17]);
+    const massaGordura = parseNum(row[18]);
+    const massaSemGordura = parseNum(row[19]);
 
-    if (!abdomen && !cintura && !quadril && !parseNum(row[2])) continue;
+    if (!abdomen && !cintura && !quadril && !parseNum(row[2]) && !pesoAvaliacao) continue;
 
     records.push({
       id: 'm-sheet-' + (r + 1),
@@ -466,7 +548,11 @@ function parseMeasureSheet(sheet) {
       coxaEsq: parseNum(row[13]),
       panturrilhaDir: parseNum(row[14]),
       panturrilhaEsq: parseNum(row[15]),
-      observacoes: String(row[16] || '')
+      pesoAvaliacao: pesoAvaliacao,
+      gorduraAvaliacao: gorduraAvaliacao,
+      massaGordura: massaGordura,
+      massaSemGordura: massaSemGordura,
+      observacoes: String(row[20] || (row.length === 17 ? row[16] : '') || '')
     });
   }
 
@@ -657,6 +743,10 @@ function addMeasureToSheet(sheet, d) {
     fmt(d.coxaEsq),
     fmt(d.panturrilhaDir),
     fmt(d.panturrilhaEsq),
+    fmt(d.pesoAvaliacao),
+    fmt(d.gorduraAvaliacao),
+    fmt(d.massaGordura),
+    fmt(d.massaSemGordura),
     d.observacoes || ''
   ];
 

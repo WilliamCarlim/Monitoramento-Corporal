@@ -65,10 +65,19 @@ export const INITIAL_WEIGHT_RECORDS: WeightRecord[] = [
 
 export const INITIAL_MEASURE_RECORDS: MeasureRecord[] = [
   {
+    id: 'm-0',
+    data: '10/05/2026',
+    pesoAvaliacao: 112.0,
+    gorduraAvaliacao: 40.3,
+    massaGordura: 45.1,
+    massaSemGordura: 66.9,
+    observacoes: 'Avaliação Física Academia Panobianco • Ticket 1038, Máquina 8678, Bariri (Altura: 176 cm, Idade: 34)',
+  },
+  {
     id: 'm-1',
     data: '16/11/2026',
     abdomen: 127,
-    observacoes: 'Medição preliminar com trena na altura do umbigo, soltando o ar até ficar sem fôlego (aguardando fita métrica para medida oficial)',
+    observacoes: 'Medição preliminar com trena na altura do umbigo, soltando o ar até ficar sem fôlego (aguardando fita métrica oficial)',
   },
 ];
 
@@ -102,6 +111,18 @@ export const INITIAL_WORKOUT_RECORDS: WorkoutRecord[] = [
     calorias: 356,
     observacoes: '7 exercícios executados • Fast fit • Ficha: Abcde w hipertrofi...',
   },
+  {
+    id: 't-2',
+    data: '17/11/2026',
+    diaSemana: 'terça-feira',
+    contexto: 'Fast fit • 11:59',
+    focoDivisao: 'Quadríceps',
+    duracaoMin: 40,
+    exerciciosCargas: 'Agachamento máquina - 4 séries; Leg press 45° - 4 séries; Cadeira extensora - 4 séries; Panturrilha no leg - 3 séries',
+    esforcoPse: 8,
+    calorias: 277,
+    observacoes: 'Treino de pernas / quadríceps executado • Fast fit • 11:59',
+  },
 ];
 
 export const INITIAL_PHOTO_RECORDS: PhotoRecord[] = [
@@ -117,13 +138,13 @@ export const INITIAL_PHOTO_RECORDS: PhotoRecord[] = [
 ];
 
 const STORAGE_KEYS = {
-  WEIGHTS: 'mc_weight_records_v3',
-  MEASURES: 'mc_measure_records_v3',
-  CARDIOS: 'mc_cardio_records_v3',
-  WORKOUTS: 'mc_workout_records_v3',
-  PHOTOS: 'mc_photo_records_v3',
-  PROFILE: 'mc_user_profile_v3',
-  API_CONFIG: 'mc_api_config_v3',
+  WEIGHTS: 'mc_weight_records_v4',
+  MEASURES: 'mc_measure_records_v4',
+  CARDIOS: 'mc_cardio_records_v4',
+  WORKOUTS: 'mc_workout_records_v4',
+  PHOTOS: 'mc_photo_records_v4',
+  PROFILE: 'mc_user_profile_v4',
+  API_CONFIG: 'mc_api_config_v4',
 };
 
 export function getStoredWeights(): WeightRecord[] {

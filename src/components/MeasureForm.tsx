@@ -32,6 +32,12 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({ onSubmit, onSuccess })
   const [panturrilhaDir, setPanturrilhaDir] = useState<string>('');
   const [panturrilhaEsq, setPanturrilhaEsq] = useState<string>('');
 
+  // Bioimpedância da Avaliação Física / Balança Mensal (Academia Panobianco, InBody, etc.)
+  const [pesoAvaliacao, setPesoAvaliacao] = useState<string>('');
+  const [gorduraAvaliacao, setGorduraAvaliacao] = useState<string>('');
+  const [massaGordura, setMassaGordura] = useState<string>('');
+  const [massaSemGordura, setMassaSemGordura] = useState<string>('');
+
   // Context & Tool
   const [instrumento, setInstrumento] = useState<string>('Fita métrica flexível');
   const [respiracao, setRespiracao] = useState<string>('Respiração normal (relaxado)');
@@ -69,6 +75,10 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({ onSubmit, onSuccess })
           if (d.coxaEsq) setCoxaEsq(String(d.coxaEsq));
           if (d.panturrilhaDir) setPanturrilhaDir(String(d.panturrilhaDir));
           if (d.panturrilhaEsq) setPanturrilhaEsq(String(d.panturrilhaEsq));
+          if (d.pesoAvaliacao) setPesoAvaliacao(String(d.pesoAvaliacao));
+          if (d.gorduraAvaliacao) setGorduraAvaliacao(String(d.gorduraAvaliacao));
+          if (d.massaGordura) setMassaGordura(String(d.massaGordura));
+          if (d.massaSemGordura) setMassaSemGordura(String(d.massaSemGordura));
           if (d.observacoes) setObservacoes(d.observacoes);
 
           setFeedback({
@@ -117,17 +127,22 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({ onSubmit, onSuccess })
     const pCoxaEsq = parseBRNumber(coxaEsq);
     const pPanturrilhaDir = parseBRNumber(panturrilhaDir);
     const pPanturrilhaEsq = parseBRNumber(panturrilhaEsq);
+    const pPesoAv = parseBRNumber(pesoAvaliacao);
+    const pGorduraAv = parseBRNumber(gorduraAvaliacao);
+    const pMassaGord = parseBRNumber(massaGordura);
+    const pMassaSemGord = parseBRNumber(massaSemGordura);
 
     const hasAnyMeasure = [
       pAbdomen, pCintura, pQuadril, pTorax, pPescoco, pOmbro,
       pBracoDir, pBracoEsq, pAntebracoDir, pAntebracoEsq,
-      pCoxaDir, pCoxaEsq, pPanturrilhaDir, pPanturrilhaEsq
+      pCoxaDir, pCoxaEsq, pPanturrilhaDir, pPanturrilhaEsq,
+      pPesoAv, pGorduraAv, pMassaGord, pMassaSemGord
     ].some(v => v > 0);
 
     if (!hasAnyMeasure) {
       setFeedback({
         type: 'error',
-        message: 'Preencha ao menos uma medida corporal para registrar.',
+        message: 'Preencha ao menos uma medida corporal ou dado de avaliação para registrar.',
       });
       return;
     }
@@ -150,6 +165,10 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({ onSubmit, onSuccess })
     const pCoxaEsq = parseBRNumber(coxaEsq);
     const pPanturrilhaDir = parseBRNumber(panturrilhaDir);
     const pPanturrilhaEsq = parseBRNumber(panturrilhaEsq);
+    const pPesoAv = parseBRNumber(pesoAvaliacao);
+    const pGorduraAv = parseBRNumber(gorduraAvaliacao);
+    const pMassaGord = parseBRNumber(massaGordura);
+    const pMassaSemGord = parseBRNumber(massaSemGordura);
 
     setLoading(true);
     setFeedback(null);
@@ -176,6 +195,10 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({ onSubmit, onSuccess })
         coxaEsq: pCoxaEsq || undefined,
         panturrilhaDir: pPanturrilhaDir || undefined,
         panturrilhaEsq: pPanturrilhaEsq || undefined,
+        pesoAvaliacao: pPesoAv || undefined,
+        gorduraAvaliacao: pGorduraAv || undefined,
+        massaGordura: pMassaGord || undefined,
+        massaSemGordura: pMassaSemGord || undefined,
         observacoes: fullObservacoes,
       };
 
@@ -404,6 +427,64 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({ onSubmit, onSuccess })
           </div>
         </div>
 
+        {/* 4. Bioimpedância da Avaliação Física / Balança Mensal */}
+        <div className="border border-indigo-500/40 bg-indigo-950/20 rounded-xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-indigo-300 uppercase tracking-wide flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-indigo-400" />
+              4. Bioimpedância da Avaliação Física Mensal (Panobianco / Clínica)
+            </h3>
+            <span className="text-[11px] text-indigo-400 font-medium px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/30">
+              Opcional
+            </span>
+          </div>
+          <p className="text-xs text-slate-400">
+            Preencha caso tenha realizado pesagem/avaliação na balança da academia (registro oficial com ticket/máquina).
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div>
+              <label className="block text-xs text-slate-300 mb-1">Peso Avaliação (kg)</label>
+              <input
+                type="text"
+                value={pesoAvaliacao}
+                onChange={(e) => setPesoAvaliacao(e.target.value)}
+                placeholder="Ex: 112,0"
+                className="w-full bg-slate-900 border border-indigo-700/50 rounded-lg px-3 py-2 text-white font-bold text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-300 mb-1">Gordura Avaliação (%)</label>
+              <input
+                type="text"
+                value={gorduraAvaliacao}
+                onChange={(e) => setGorduraAvaliacao(e.target.value)}
+                placeholder="Ex: 40,3"
+                className="w-full bg-slate-900 border border-indigo-700/50 rounded-lg px-3 py-2 text-amber-300 font-semibold text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-300 mb-1">Massa Gordura (kg)</label>
+              <input
+                type="text"
+                value={massaGordura}
+                onChange={(e) => setMassaGordura(e.target.value)}
+                placeholder="Ex: 45,1"
+                className="w-full bg-slate-900 border border-indigo-700/50 rounded-lg px-3 py-2 text-rose-300 font-semibold text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-300 mb-1">Massa Sem Gordura (kg)</label>
+              <input
+                type="text"
+                value={massaSemGordura}
+                onChange={(e) => setMassaSemGordura(e.target.value)}
+                placeholder="Ex: 66,9"
+                className="w-full bg-slate-900 border border-indigo-700/50 rounded-lg px-3 py-2 text-teal-300 font-semibold text-sm"
+              />
+            </div>
+          </div>
+        </div>
+
         {/* Instrumento e Observações */}
         <div className="space-y-4 pt-2">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -568,6 +649,26 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({ onSubmit, onSuccess })
                 {panturrilhaEsq && (
                   <div>
                     <span className="text-cyan-400 font-semibold">Panturrilha E:</span> <span className="font-bold text-white">{panturrilhaEsq} cm</span>
+                  </div>
+                )}
+                {pesoAvaliacao && (
+                  <div>
+                    <span className="text-indigo-400 font-semibold">Peso Avaliação:</span> <span className="font-bold text-white">{pesoAvaliacao} kg</span>
+                  </div>
+                )}
+                {gorduraAvaliacao && (
+                  <div>
+                    <span className="text-amber-400 font-semibold">Gordura Avaliação:</span> <span className="font-bold text-white">{gorduraAvaliacao}%</span>
+                  </div>
+                )}
+                {massaGordura && (
+                  <div>
+                    <span className="text-rose-400 font-semibold">Massa Gordura:</span> <span className="font-bold text-white">{massaGordura} kg</span>
+                  </div>
+                )}
+                {massaSemGordura && (
+                  <div>
+                    <span className="text-teal-400 font-semibold">Massa Sem Gordura:</span> <span className="font-bold text-white">{massaSemGordura} kg</span>
                   </div>
                 )}
               </div>

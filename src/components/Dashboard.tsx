@@ -510,8 +510,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </button>
         </div>
 
-        {/* 9 Cards Dinâmicos: Métricas, Tempos Separados e Calorias Separadas */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-9 gap-2.5 text-center">
+        {/* 11 Cards Dinâmicos: Atividades, Distância, Tempos, Passos e Calorias Separados */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-11 gap-2.5 text-center">
           {/* 1. Atividades */}
           <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-700/60 flex flex-col justify-between">
             <span className="text-[11px] text-slate-400 block font-medium">Total Atividades</span>
@@ -526,49 +526,63 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <span className="text-[9px] text-slate-500 mt-0.5 block">Percorridos</span>
           </div>
 
-          {/* 3. Passos */}
-          <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-700/60 flex flex-col justify-between">
-            <span className="text-[11px] text-slate-400 block font-medium">Passos Totais</span>
-            <span className="text-lg font-black text-emerald-400 mt-1 block">{totalPassosCardio.toLocaleString('pt-BR')}</span>
-            <span className="text-[9px] text-slate-500 mt-0.5 block">Acumulados</span>
-          </div>
-
-          {/* 4. Tempo Total */}
+          {/* 3. Tempo Total */}
           <div className="bg-slate-900/80 p-3 rounded-xl border border-sky-800/60 flex flex-col justify-between">
             <span className="text-[11px] text-sky-300 block font-semibold">Tempo Total</span>
             <span className="text-base font-black text-white mt-1 block font-mono">{formattedCardioTime}</span>
             <span className="text-[9px] text-slate-400 mt-0.5 block">Geral</span>
           </div>
 
-          {/* 5. Tempo no Mês */}
+          {/* 4. Tempo no Mês */}
           <div className="bg-slate-900/80 p-3 rounded-xl border border-sky-800/60 flex flex-col justify-between">
             <span className="text-[11px] text-sky-300 block font-semibold">Tempo no Mês</span>
             <span className="text-base font-black text-sky-200 mt-1 block font-mono">{formattedCardioTimeMonth}</span>
             <span className="text-[9px] text-slate-400 mt-0.5 block">Mês corrente</span>
           </div>
 
-          {/* 6. Tempo na Semana */}
+          {/* 5. Tempo na Semana */}
           <div className="bg-slate-900/80 p-3 rounded-xl border border-sky-800/60 flex flex-col justify-between">
             <span className="text-[11px] text-sky-300 block font-semibold">Tempo na Semana</span>
             <span className="text-base font-black text-sky-200 mt-1 block font-mono">{formattedCardioTimeWeek}</span>
             <span className="text-[9px] text-slate-400 mt-0.5 block">Semana corrente</span>
           </div>
 
-          {/* 7. Calorias Total */}
+          {/* 6. Passos Total */}
+          <div className="bg-slate-900/80 p-3 rounded-xl border border-emerald-500/40 flex flex-col justify-between">
+            <span className="text-[11px] text-emerald-400 block font-semibold">Passos Total</span>
+            <span className="text-lg font-black text-emerald-300 mt-1 block">{totalPassosCardio.toLocaleString('pt-BR')}</span>
+            <span className="text-[9px] text-slate-500 mt-0.5 block">Acumulados</span>
+          </div>
+
+          {/* 7. Passos no Mês */}
+          <div className="bg-slate-900/80 p-3 rounded-xl border border-emerald-500/40 flex flex-col justify-between">
+            <span className="text-[11px] text-emerald-400 block font-semibold">Passos no Mês</span>
+            <span className="text-lg font-black text-emerald-300 mt-1 block">{mensalPassosCardio.toLocaleString('pt-BR')}</span>
+            <span className="text-[9px] text-slate-500 mt-0.5 block">Mês</span>
+          </div>
+
+          {/* 8. Passos na Semana */}
+          <div className="bg-slate-900/80 p-3 rounded-xl border border-emerald-500/40 flex flex-col justify-between">
+            <span className="text-[11px] text-emerald-400 block font-semibold">Passos na Semana</span>
+            <span className="text-lg font-black text-emerald-300 mt-1 block">{semanalPassosCardio.toLocaleString('pt-BR')}</span>
+            <span className="text-[9px] text-slate-500 mt-0.5 block">Semana</span>
+          </div>
+
+          {/* 9. Calorias Total */}
           <div className="bg-slate-900/80 p-3 rounded-xl border border-amber-500/40 flex flex-col justify-between">
             <span className="text-[11px] text-amber-400 block font-semibold">Calorias Total</span>
             <span className="text-base font-black text-amber-300 mt-1 block">{totalCaloriasCardio.toLocaleString('pt-BR')} kcal</span>
             <span className="text-[9px] text-slate-500 mt-0.5 block">Geral</span>
           </div>
 
-          {/* 8. Calorias no Mês */}
+          {/* 10. Calorias no Mês */}
           <div className="bg-slate-900/80 p-3 rounded-xl border border-amber-500/40 flex flex-col justify-between">
             <span className="text-[11px] text-amber-400 block font-semibold">Calorias no Mês</span>
             <span className="text-base font-black text-amber-300 mt-1 block">{mensalCaloriasCardio.toLocaleString('pt-BR')} kcal</span>
             <span className="text-[9px] text-slate-500 mt-0.5 block">Mês</span>
           </div>
 
-          {/* 9. Calorias na Semana */}
+          {/* 11. Calorias na Semana */}
           <div className="bg-slate-900/80 p-3 rounded-xl border border-amber-500/40 flex flex-col justify-between">
             <span className="text-[11px] text-amber-400 block font-semibold">Calorias na Semana</span>
             <span className="text-base font-black text-amber-300 mt-1 block">{semanalCaloriasCardio.toLocaleString('pt-BR')} kcal</span>

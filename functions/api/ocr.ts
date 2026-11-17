@@ -16,11 +16,11 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     return new Response(JSON.stringify({ error: 'Nenhuma imagem enviada' }), { status: 400 });
   }
 
-  const apiKey = env.GEMINI_API_KEY;
+  const apiKey = body.apiKey || env.GEMINI_API_KEY;
   if (!apiKey) {
     return new Response(
       JSON.stringify({
-        error: 'Chave GEMINI_API_KEY não configurada no Cloudflare Pages.',
+        error: 'Chave GEMINI_API_KEY não configurada no Cloudflare Pages nem nas Configurações.',
       }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );

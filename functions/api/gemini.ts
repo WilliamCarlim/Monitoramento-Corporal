@@ -12,14 +12,12 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
   const { prompt, history = [], context: appContext = {} } = body;
 
-  const apiKey = env.GEMINI_API_KEY;
+  const apiKey = body.apiKey || env.GEMINI_API_KEY;
   if (!apiKey) {
     return new Response(
       JSON.stringify({
-        text: `⚠️ A chave **GEMINI_API_KEY** não está configurada nos Secrets do Cloudflare Pages.
-
-Por favor, adicione a variável de ambiente:
-\`GEMINI_API_KEY=AIzaSy...\` no painel do Cloudflare (Pages > Settings > Environment variables) ou adicione temporariamente na tela de Configurações do site.`,
+        text: `⚠️ A chave **GEMINI_API_KEY** não está configurada nos Secrets do Cloudflare Pages nem nas Configurações.
+Por favor, adicione na tela de Configurações (⚙️) do site ou nas variáveis de ambiente do Cloudflare Pages.`,
       }),
       { headers: { 'Content-Type': 'application/json' } }
     );

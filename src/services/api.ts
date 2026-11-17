@@ -593,16 +593,58 @@ export async function addPhotoRecord(payload: {
 // 6. OCR & EXTRAÇÃO INTELIGENTE DE PRINTS (GEMINI VISION)
 // ----------------------------------------------------------------------
 
+// Helper para comprimir/redimensionar imagens base64 antes do envio (evita limites de upload em conexões móveis)
+export function compressBase64Image(base64: string, maxWidth = 1280, maxHeight = 1280, quality = 0.85): Promise<string> {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined' || !base64.startsWith('data:image')) {
+      return resolve(base64);
+    }
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (width <= maxWidth && height <= maxHeight) {
+        return resolve(base64);
+      }
+      if (width > height) {
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+      } else {
+        if (height > maxHeight) {
+          width = Math.round((width * maxHeight) / height);
+          height = maxHeight;
+        }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return resolve(base64);
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => resolve(base64);
+    img.src = base64;
+  });
+}
+
 export async function extractFromPrint(
   imageBase64: string,
   type: 'weight' | 'cardio' | 'workout' | 'measure'
 ): Promise<{ success: boolean; data?: any; error?: string }> {
-  // Try 1: Cloudflare Pages /api/ocr
+  const settings = getApiSettings();
+  const apiKey = (settings.geminiKey || '').trim();
+
+  // 1. Otimiza o tamanho da imagem para envio instantâneo
+  const optimizedBase64 = await compressBase64Image(imageBase64);
+
+  // Try 1: Cloudflare Pages /api/ocr (usa env.GEMINI_API_KEY do Cloudflare ou apiKey das configurações)
   try {
     const res = await fetch('/api/ocr', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imageBase64, type }),
+      body: JSON.stringify({ imageBase64: optimizedBase64, type, apiKey: apiKey || undefined }),
     });
     if (res.ok) {
       const json = await res.json();
@@ -610,7 +652,58 @@ export async function extractFromPrint(
         return { success: true, data: json.data };
       }
     }
-  } catch {}
+  } catch (e) {
+    console.warn('/api/ocr request error, attempting direct Gemini fallback', e);
+  }
+
+  // Try 2: Direct Client Fallback to Google Gemini API (se apiKey estiver salva nas configurações)
+  if (apiKey) {
+    try {
+    const cleanBase64 = optimizedBase64.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, '');
+    let mimeType = 'image/jpeg';
+    const match = optimizedBase64.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,/);
+    if (match) mimeType = match[1];
+
+    let prompt = '';
+    if (type === 'weight') {
+      prompt = 'Extraia dados de balança/bioimpedância em JSON: { "peso": number, "data": string (DD/MM/AAAA), "horario": string, "imc": number, "gorduraPercent": number, "pesoGordura": number, "massaMuscEsqPercent": number, "pesoMassaMuscEsq": number, "massaMuscularPercent": number, "pesoMassaMuscular": number, "aguaPercent": number, "pesoAgua": number, "gorduraVisceral": number, "metabolismo": number, "imcApp": number, "alturaApp": number, "idadeApp": number, "melhorPeso30d": number, "observacoes": string }. Apenas JSON sem markdown.';
+    } else if (type === 'cardio') {
+      prompt = 'Extraia dados de corrida/caminhada/bike (Strava/relógio) em JSON: { "modalidade": "Caminhada" | "Corrida" | "Ciclismo / Bike" | "Esteira", "data": string (DD/MM/AAAA), "horario": string, "local": string, "distanciaKm": number, "tempoMovimento": string (HH:MM:SS), "passos": number ou null, "elevacaoM": number ou null, "calorias": number ou null, "observacoes": string }. Apenas JSON sem markdown.';
+    } else if (type === 'workout') {
+      prompt = 'Extraia dados de treino de musculação em JSON: { "focoDivisao": string (apenas grupos musculares ex: Peitoral / Tríceps), "exerciciosCargas": string, "observacoes": string, "data": string, "contexto": string }. Apenas JSON sem markdown.';
+    } else {
+      prompt = 'Extraia medidas corporais e bioimpedância mensal em JSON: { "data": string, "pescoco": number, "ombro": number, "torax": number, "cintura": number, "abdomen": number, "quadril": number, "bracoDir": number, "bracoEsq": number, "antebracoDir": number, "antebracoEsq": number, "coxaDir": number, "coxaEsq": number, "panturrilhaDir": number, "panturrilhaEsq": number, "pesoAvaliacao": number, "gorduraAvaliacao": number, "massaGordura": number, "massaSemGordura": number, "observacoes": string }. Apenas JSON sem markdown.';
+    }
+
+    const CANDIDATE_MODELS = ['gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-2.5-flash'];
+    for (const model of CANDIDATE_MODELS) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: prompt },
+              { inlineData: { mimeType, data: cleanBase64 } }
+            ]
+          }],
+          generationConfig: { temperature: 0.1, maxOutputTokens: 1500 }
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+        const cleaned = jsonMatch ? jsonMatch[0] : rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+        const parsed = JSON.parse(cleaned);
+        return { success: true, data: parsed };
+      }
+    }
+    } catch (err: any) {
+      console.error('Direct Gemini OCR failed', err);
+    }
+  }
 
   return { success: false, error: 'Não foi possível extrair dados automaticamente. Preencha manualmente ou revise a chave do Gemini.' };
 }
@@ -630,7 +723,10 @@ export async function askGemini(
   const photos = getStoredPhotos();
   const profile = getStoredProfile();
 
+  const settings = getApiSettings();
+
   const payload = {
+    apiKey: settings.geminiKey || undefined,
     prompt,
     history: history.slice(-6).map(h => ({ role: h.role, parts: [{ text: h.content }] })),
     context: {

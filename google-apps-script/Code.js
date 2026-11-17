@@ -482,7 +482,6 @@ function atualizarCardsTreinos(sheet) {
     sheet.getRange(7, col).setValue(subtitles[i]).setFontSize(7).setFontColor('#64748b').setHorizontalAlignment('center');
   }
 }
-}
 
 // ==========================================
 // 5. ABA FOTOS

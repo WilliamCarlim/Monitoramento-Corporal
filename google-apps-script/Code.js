@@ -100,9 +100,18 @@ function organizarAbaPeso(ss) {
 }
 
 function atualizarCardsPeso(sheet) {
+  // Limpa linhas 4 a 8
+  sheet.getRange('A4:Z4').clear().clearFormat();
+  sheet.getRange('A8:Z8').clear().clearFormat();
+
   const cardsTitles = [
     'PESO INICIAL', 'PESO ATUAL', 'VARIAÇÃO TOTAL', 'IMC ATUAL',
     'GORDURA ATUAL', 'MASSA MUSCULAR', 'GORDURA VISCERAL', 'METABOLISMO BASAL'
+  ];
+
+  const subtitles = [
+    'Base: 16/11/2026', 'Aferição mais recente', 'Perda acumulada', 'Obesidade Grau I',
+    'Aferição mais recente', 'Aferição mais recente', 'Nível de gordura', 'Gasto diário basal'
   ];
 
   const records = parseWeightSheet(sheet);
@@ -113,24 +122,70 @@ function atualizarCardsPeso(sheet) {
   const pesoAtual = latest ? latest.peso : 111.750;
   const varTotal = Number((pesoAtual - pesoIni).toFixed(3));
   const imcAtual = latest ? latest.imc : 34.49;
-  const gordura = latest && latest.gorduraPercent ? `${latest.gorduraPercent}% • ${latest.pesoGordura || 0} kg` : '35,2% • 39,4 kg';
-  const massaMusc = latest && latest.massaMuscularPercent ? `${latest.massaMuscularPercent}% • ${latest.pesoMassaMuscular || 0} kg` : '62,1% • 69,5 kg';
+  const gPct = latest && latest.gorduraPercent ? parsePercentNumber(latest.gorduraPercent) : 35.2;
+  const gKg = latest && latest.pesoGordura ? latest.pesoGordura : 39.4;
+  const mPct = latest && latest.massaMuscularPercent ? parsePercentNumber(latest.massaMuscularPercent) : 62.1;
+  const mKg = latest && latest.pesoMassaMuscular ? latest.pesoMassaMuscular : 69.5;
   const visceral = latest && latest.gorduraVisceral ? latest.gorduraVisceral : 26.0;
-  const metabolismo = latest && latest.metabolismo ? `${latest.metabolismo} kcal/dia` : '2.126,0 kcal/dia';
+  const metabolismo = latest && latest.metabolismo ? `${Number(latest.metabolismo).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} kcal/dia` : '2.126,0 kcal/dia';
 
   const cardsValues = [
     `${Number(pesoIni).toLocaleString('pt-BR', { minimumFractionDigits: 3 })} kg`,
     `${Number(pesoAtual).toLocaleString('pt-BR', { minimumFractionDigits: 3 })} kg`,
     `${varTotal > 0 ? '+' : ''}${Number(varTotal).toLocaleString('pt-BR', { minimumFractionDigits: 3 })} kg`,
     Number(imcAtual).toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
-    gordura,
-    massaMusc,
+    `${Number(gPct).toLocaleString('pt-BR', { minimumFractionDigits: 1 })}% • ${Number(gKg).toLocaleString('pt-BR', { minimumFractionDigits: 1 })} kg`,
+    `${Number(mPct).toLocaleString('pt-BR', { minimumFractionDigits: 1 })}% • ${Number(mKg).toLocaleString('pt-BR', { minimumFractionDigits: 1 })} kg`,
     Number(visceral).toLocaleString('pt-BR', { minimumFractionDigits: 1 }),
     metabolismo
   ];
 
-  sheet.getRange(5, 2, 1, cardsTitles.length).setValues([cardsTitles]).setFontWeight('bold').setBackground('#f1f5f9');
-  sheet.getRange(6, 2, 1, cardsValues.length).setValues([cardsValues]).setFontWeight('bold').setFontSize(12);
+  // As 8 colunas de cards são distribuídas em pares B:C, D:E, F:G, H:I, J:K, L:M, N:O, P:Q
+  const colPairs = [
+    [2, 3],   // B:C - PESO INICIAL
+    [4, 5],   // D:E - PESO ATUAL
+    [6, 7],   // F:G - VARIAÇÃO TOTAL
+    [8, 9],   // H:I - IMC ATUAL
+    [10, 11], // J:K - GORDURA ATUAL
+    [12, 13], // L:M - MASSA MUSCULAR
+    [14, 15], // N:O - GORDURA VISCERAL
+    [16, 17]  // P:Q - METABOLISMO BASAL
+  ];
+
+  // Limpa o intervalo B5:Q7 antes de recriar as mesclagens
+  try {
+    sheet.getRange('B5:Q7').breakApart();
+  } catch (e) {}
+
+  for (let i = 0; i < colPairs.length; i++) {
+    const col = colPairs[i][0];
+    // Linha 5: Título
+    sheet.getRange(5, col, 1, 2).merge()
+      .setValue(cardsTitles[i])
+      .setFontWeight('bold')
+      .setFontSize(9)
+      .setBackground('#f1f5f9')
+      .setFontColor('#475569')
+      .setHorizontalAlignment('center')
+      .setVerticalAlignment('middle');
+
+    // Linha 6: Valor
+    sheet.getRange(6, col, 1, 2).merge()
+      .setValue(cardsValues[i])
+      .setFontWeight('bold')
+      .setFontSize(12)
+      .setFontColor('#0f172a')
+      .setHorizontalAlignment('center')
+      .setVerticalAlignment('middle');
+
+    // Linha 7: Subtítulo
+    sheet.getRange(7, col, 1, 2).merge()
+      .setValue(subtitles[i])
+      .setFontSize(8)
+      .setFontColor('#64748b')
+      .setHorizontalAlignment('center')
+      .setVerticalAlignment('middle');
+  }
 }
 
 // ==========================================
@@ -194,9 +249,8 @@ function organizarAbaCardio(ss) {
     sheet = ss.insertSheet('Cardio');
   }
 
-  // 1. Limpa a Linha 4 e Linha 8
-  sheet.getRange('A4:Z4').clear().clearFormat();
-  sheet.getRange('A8:Z8').clear().clearFormat();
+  // 1. Limpa completamente as linhas 4 a 8 (remove blocos duplicados de versões anteriores)
+  sheet.getRange('A4:Z8').clear().clearFormat();
 
   // 2. Cabeçalho oficial na Linha 9
   const header = [
@@ -207,7 +261,7 @@ function organizarAbaCardio(ss) {
   sheet.getRange(9, 2, 1, header.length).setValues([header]);
   sheet.getRange(9, 2, 1, header.length).setFontWeight('bold').setBackground('#0284c7').setFontColor('#ffffff');
 
-  // 3. Registro inicial na Linha 10
+  // 3. Registro inicial na Linha 10 (garante apenas 1 registro oficial)
   const val10 = sheet.getRange(10, 2).getValue();
   if (!val10 || String(val10).toLowerCase().includes('data')) {
     const row = [
@@ -232,8 +286,7 @@ function organizarAbaCardio(ss) {
 }
 
 function atualizarCardsCardio(sheet) {
-  sheet.getRange('A4:Z4').clear().clearFormat();
-  sheet.getRange('A8:Z8').clear().clearFormat();
+  sheet.getRange('A4:Z8').clear().clearFormat();
 
   const cardios = parseCardioSheet(sheet);
   let totalKm = 0;
@@ -284,38 +337,42 @@ function atualizarCardsCardio(sheet) {
 
   const timeFormatted = totalSeconds > 0 ? formatSec(totalSeconds) : '0:58:43';
 
-  // Títulos na Linha 5
-  sheet.getRange(5, 2).setValue('TOTAL DE ATIVIDADES').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
-  sheet.getRange(5, 4).setValue('DISTÂNCIA TOTAL').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
-  sheet.getRange(5, 6).setValue('TEMPO TOTAL').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
-  sheet.getRange(5, 8).setValue('TEMPO MENSAL / SEM').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
-  sheet.getRange(5, 10).setValue('PASSOS TOTAIS').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
-  sheet.getRange(5, 12).setValue('CALORIAS ESTIMADAS').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
-  sheet.getRange(5, 14).setValue('CAMINHADA TOTAL').setFontWeight('bold').setFontSize(9).setFontColor('#0284c7');
-  sheet.getRange(5, 16).setValue('CAMINHADA MÊS / SEM').setFontWeight('bold').setFontSize(9).setFontColor('#0284c7');
-  sheet.getRange(5, 18).setValue('BIKE TOTAL (MÊS / SEM)').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
+  const titles = [
+    'TOTAL ATIVIDADES', 'DISTÂNCIA TOTAL', 'TEMPO TOTAL', 'TEMPO MENSAL', 'TEMPO SEMANAL',
+    'PASSOS TOTAIS', 'CALORIAS TOTAL', 'CALORIAS MENSAL', 'CALORIAS SEMANAL',
+    'CAMINHADA TOTAL', 'CAMINHADA MÊS', 'CAMINHADA SEM', 'BIKE TOTAL', 'BIKE MÊS', 'BIKE SEM'
+  ];
 
-  // Valores na Linha 6
-  sheet.getRange(6, 2).setValue(`${cardios.length} atividade(s)`).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
-  sheet.getRange(6, 4).setValue(`${totalKm.toFixed(2).replace('.', ',')} km`).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
-  sheet.getRange(6, 6).setValue(timeFormatted).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
-  sheet.getRange(6, 8).setValue(`Mês: ${timeFormatted} • Sem: ${timeFormatted}`).setFontWeight('bold').setFontSize(11).setFontColor('#0f172a');
-  sheet.getRange(6, 10).setValue(`${totalPassos.toLocaleString('pt-BR')} passos`).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
-  sheet.getRange(6, 12).setValue(`${totalKcal.toLocaleString('pt-BR')} kcal`).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
-  sheet.getRange(6, 14).setValue(`${caminhadaTotal.toFixed(2).replace('.', ',')} km`).setFontWeight('bold').setFontSize(14).setFontColor('#0284c7');
-  sheet.getRange(6, 16).setValue(`Mês: ${caminhadaMensal.toFixed(2).replace('.', ',')} • Sem: ${caminhadaSemanal.toFixed(2).replace('.', ',')} km`).setFontWeight('bold').setFontSize(11).setFontColor('#0284c7');
-  sheet.getRange(6, 18).setValue(`${bikeTotal.toFixed(2).replace('.', ',')} km (Mês: 0,00 • Sem: 0,00)`).setFontWeight('bold').setFontSize(11).setFontColor('#0f172a');
+  const values = [
+    `${cardios.length} atividade(s)`,
+    `${totalKm.toFixed(2).replace('.', ',')} km`,
+    timeFormatted,
+    timeFormatted,
+    timeFormatted,
+    `${totalPassos.toLocaleString('pt-BR')} passos`,
+    `${totalKcal.toLocaleString('pt-BR')} kcal`,
+    `${totalKcal.toLocaleString('pt-BR')} kcal`,
+    `${totalKcal.toLocaleString('pt-BR')} kcal`,
+    `${caminhadaTotal.toFixed(2).replace('.', ',')} km`,
+    `${caminhadaMensal.toFixed(2).replace('.', ',')} km`,
+    `${caminhadaSemanal.toFixed(2).replace('.', ',')} km`,
+    `${bikeTotal.toFixed(2).replace('.', ',')} km`,
+    `${bikeMensal.toFixed(2).replace('.', ',')} km`,
+    `${bikeSemanal.toFixed(2).replace('.', ',')} km`
+  ];
 
-  // Subtítulos na Linha 7
-  sheet.getRange(7, 2).setValue('Sessões aeróbicas').setFontSize(8).setFontColor('#64748b');
-  sheet.getRange(7, 4).setValue('Quilometragem geral').setFontSize(8).setFontColor('#64748b');
-  sheet.getRange(7, 6).setValue('Duração acumulada').setFontSize(8).setFontColor('#64748b');
-  sheet.getRange(7, 8).setValue('Tempo no mês e semana').setFontSize(8).setFontColor('#64748b');
-  sheet.getRange(7, 10).setValue('Passos acumulados').setFontSize(8).setFontColor('#64748b');
-  sheet.getRange(7, 12).setValue('Gasto calórico total').setFontSize(8).setFontColor('#64748b');
-  sheet.getRange(7, 14).setValue('Quilômetros a pé').setFontSize(8).setFontColor('#0284c7');
-  sheet.getRange(7, 16).setValue('Evolução periódica').setFontSize(8).setFontColor('#0284c7');
-  sheet.getRange(7, 18).setValue('Ciclismo / Bike').setFontSize(8).setFontColor('#64748b');
+  const subtitles = [
+    'Sessões registradas', 'Quilometragem geral', 'Duração geral', 'No mês corrente', 'Na semana corrente',
+    'Passos acumulados', 'Gasto calórico total', 'No mês corrente', 'Na semana corrente',
+    'A pé acumulado', 'A pé no mês', 'A pé na semana', 'Ciclismo total', 'Ciclismo no mês', 'Ciclismo na semana'
+  ];
+
+  for (let i = 0; i < titles.length; i++) {
+    const col = i + 2;
+    sheet.getRange(5, col).setValue(titles[i]).setFontWeight('bold').setFontSize(8).setFontColor('#475569').setBackground('#f1f5f9').setHorizontalAlignment('center');
+    sheet.getRange(6, col).setValue(values[i]).setFontWeight('bold').setFontSize(11).setFontColor('#0f172a').setHorizontalAlignment('center');
+    sheet.getRange(7, col).setValue(subtitles[i]).setFontSize(7).setFontColor('#64748b').setHorizontalAlignment('center');
+  }
 }
 
 // ==========================================
@@ -328,26 +385,24 @@ function organizarAbaTreinos(ss) {
     sheet = ss.insertSheet('Treinos');
   }
 
-  // 1. Limpa Linha 4 e Linha 8
-  sheet.getRange('A4:Z4').clear().clearFormat();
-  sheet.getRange('A8:Z8').clear().clearFormat();
+  // 1. Limpa completamente as linhas 4 a 8
+  sheet.getRange('A4:Z8').clear().clearFormat();
 
-  // 2. Cabeçalho oficial na Linha 9 (9 colunas incluindo Gasto Calórico)
+  // 2. Cabeçalho oficial na Linha 9 (8 colunas - SEM Esforço PSE)
   const header = [
     'Data', 'Dia da Semana', 'Horário / Contexto', 'Foco / Divisão Muscular',
-    'Duração (min)', 'Exercícios / Observações de Carga', 'Esforço (PSE)', 'Gasto Calórico Estimado (kcal)', 'Observações'
+    'Duração (min)', 'Exercícios / Observações de Carga', 'Gasto Calórico Estimado (kcal)', 'Observações'
   ];
   sheet.getRange(9, 2, 1, header.length).setValues([header]);
   sheet.getRange(9, 2, 1, header.length).setFontWeight('bold').setBackground('#7c3aed').setFontColor('#ffffff');
 
-  // 3. Registros iniciais: Linha 10 (16/11/2026 Peitoral/Tríceps) e Linha 11 (17/11/2026 Quadríceps)
+  // 3. Registros oficiais: Linha 10 (16/11 Peitoral/Tríceps) e Linha 11 (17/11 Quadríceps)
   const val10 = sheet.getRange(10, 2).getValue();
   if (!val10 || String(val10).toLowerCase().includes('data')) {
     const row1 = [
       '16/11/2026', 'segunda-feira', 'Academia Fast fit', 'Peitoral / Tríceps',
       '55',
       'Supino reto com barra - 3 séries (30kg máquina); Supino inclinado com halteres - 3 séries (15 cada lado máquina); Peck deck - 3 séries (50); Crucifixo na polia - 3 séries (7.5); Tríceps francês - 3 séries; Tríceps corda - 3 séries (17.5); Tríceps testa com halteres - 3 séries',
-      '8',
       '356',
       '7 exercícios executados • Fast fit • Ficha: Abcde w hipertrofi...'
     ];
@@ -357,12 +412,11 @@ function organizarAbaTreinos(ss) {
   const val11 = sheet.getRange(11, 2).getValue();
   if (!val11 || String(val11).trim() === '') {
     const row2 = [
-      '17/11/2026', 'terça-feira', 'Fast fit • 11:59', 'Quadríceps',
+      '17/11/2026', 'terça-feira', 'Academia (Fast fit) • 11:59', 'Quadríceps',
       '40',
-      'Agachamento máquina - 4 séries; Leg press 45° - 4 séries; Cadeira extensora - 4 séries; Panturrilha no leg - 3 séries',
-      '8',
+      'Agachamento livre - 3 séries (60kg); Leg press 45 graus - 3 séries (160kg); Cadeira extensora - 3 séries (70kg); Cadeira adutora - 3 séries (60kg); Cadeira abdutora - 3 séries (60kg); Panturrilha no leg press - 3 séries (120kg)',
       '277',
-      'Treino de pernas / quadríceps executado • Fast fit • 11:59'
+      '6 exercícios executados • Fast fit • Ficha: Abcde w hipertrofi...'
     ];
     sheet.getRange(11, 2, 1, row2.length).setValues([row2]);
   }
@@ -371,26 +425,19 @@ function organizarAbaTreinos(ss) {
   return sheet;
 }
 
-function estimateGymCaloriesAppsScript(duracaoMin, pesoKg, esforcoPse, focoDivisao) {
+function estimateGymCaloriesAppsScript(duracaoMin, pesoKg, focoDivisao) {
   if (!duracaoMin || duracaoMin <= 0) return 0;
   if (!pesoKg || pesoKg <= 0) pesoKg = 111.75;
-  let met = 5.2;
-  const pse = Number(esforcoPse) || 8;
-  if (pse <= 5) met = 3.8;
-  else if (pse <= 7) met = 4.8;
-  else if (pse <= 9) met = 5.8;
-  else met = 6.4;
-
+  let met = 3.47;
   const foco = String(focoDivisao || '').toLowerCase();
   if (foco.includes('perna') || foco.includes('quadríceps') || foco.includes('coxa') || foco.includes('glúteo') || foco.includes('costas') || foco.includes('full')) {
-    met += 0.4;
+    met = 3.72;
   }
   return Math.round(met * pesoKg * (duracaoMin / 60));
 }
 
 function atualizarCardsTreinos(sheet) {
-  sheet.getRange('A4:Z4').clear().clearFormat();
-  sheet.getRange('A8:Z8').clear().clearFormat();
+  sheet.getRange('A4:Z8').clear().clearFormat();
 
   const workouts = parseWorkoutSheet(sheet);
   let totalMinutos = 0;
@@ -401,37 +448,40 @@ function atualizarCardsTreinos(sheet) {
   workouts.forEach(w => {
     if (w.data) diasSet.add(w.data);
     totalMinutos += w.duracaoMin || 0;
-    const cal = w.calorias || estimateGymCaloriesAppsScript(w.duracaoMin, 111.75, w.esforcoPse, w.focoDivisao);
+    const cal = w.calorias || estimateGymCaloriesAppsScript(w.duracaoMin, 111.75, w.focoDivisao);
     totalCalorias += cal;
     if (w.focoDivisao) ultimoFoco = w.focoDivisao;
   });
 
-  // Títulos na Linha 5
-  sheet.getRange(5, 2).setValue('TOTAL DE TREINOS').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
-  sheet.getRange(5, 4).setValue('TEMPO TOTAL ACADEMIA').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
-  sheet.getRange(5, 6).setValue('TEMPO MENSAL').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
-  sheet.getRange(5, 8).setValue('TEMPO SEMANAL').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
-  sheet.getRange(5, 10).setValue('FREQUÊNCIA (DIAS)').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
-  sheet.getRange(5, 12).setValue('ÚLTIMO FOCO MUSCULAR').setFontWeight('bold').setFontSize(9).setFontColor('#7c3aed');
-  sheet.getRange(5, 14).setValue('CALORIAS ESTIMADAS').setFontWeight('bold').setFontSize(9).setFontColor('#475569');
+  const titles = [
+    'TOTAL DE TREINOS', 'TEMPO TOTAL', 'TEMPO MENSAL', 'TEMPO SEMANAL',
+    'FREQUÊNCIA (DIAS)', 'ÚLTIMO FOCO', 'CALORIAS TOTAL', 'CALORIAS MENSAL', 'CALORIAS SEMANAL'
+  ];
 
-  // Valores na Linha 6
-  sheet.getRange(6, 2).setValue(`${workouts.length} treino(s)`).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
-  sheet.getRange(6, 4).setValue(`${totalMinutos} min`).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
-  sheet.getRange(6, 6).setValue(`${totalMinutos} min`).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
-  sheet.getRange(6, 8).setValue(`${totalMinutos} min`).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
-  sheet.getRange(6, 10).setValue(`${diasSet.size} dia(s)`).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
-  sheet.getRange(6, 12).setValue(ultimoFoco).setFontWeight('bold').setFontSize(14).setFontColor('#7c3aed');
-  sheet.getRange(6, 14).setValue(`${totalCalorias} kcal`).setFontWeight('bold').setFontSize(14).setFontColor('#0f172a');
+  const values = [
+    `${workouts.length} treino(s)`,
+    `${totalMinutos} min`,
+    `${totalMinutos} min`,
+    `${totalMinutos} min`,
+    `${diasSet.size} dia(s)`,
+    ultimoFoco,
+    `${totalCalorias} kcal`,
+    `${totalCalorias} kcal`,
+    `${totalCalorias} kcal`
+  ];
 
-  // Subtítulos na Linha 7
-  sheet.getRange(7, 2).setValue('Sessões de musculação').setFontSize(8).setFontColor('#64748b');
-  sheet.getRange(7, 4).setValue('Duração total acumulada').setFontSize(8).setFontColor('#64748b');
-  sheet.getRange(7, 6).setValue('Tempo no mês').setFontSize(8).setFontColor('#64748b');
-  sheet.getRange(7, 8).setValue('Tempo na semana').setFontSize(8).setFontColor('#64748b');
-  sheet.getRange(7, 10).setValue('Dias ativos no período').setFontSize(8).setFontColor('#64748b');
-  sheet.getRange(7, 12).setValue('Grupos musculares').setFontSize(8).setFontColor('#7c3aed');
-  sheet.getRange(7, 14).setValue('Gasto calórico acumulado').setFontSize(8).setFontColor('#64748b');
+  const subtitles = [
+    'Sessões registradas', 'Duração acumulada', 'No mês corrente', 'Na semana corrente',
+    'Dias ativos no período', 'Grupos musculares', 'Gasto acumulado', 'No mês corrente', 'Na semana corrente'
+  ];
+
+  for (let i = 0; i < titles.length; i++) {
+    const col = i + 2;
+    sheet.getRange(5, col).setValue(titles[i]).setFontWeight('bold').setFontSize(8).setFontColor('#475569').setBackground('#f1f5f9').setHorizontalAlignment('center');
+    sheet.getRange(6, col).setValue(values[i]).setFontWeight('bold').setFontSize(12).setFontColor('#0f172a').setHorizontalAlignment('center');
+    sheet.getRange(7, col).setValue(subtitles[i]).setFontSize(7).setFontColor('#64748b').setHorizontalAlignment('center');
+  }
+}
 }
 
 // ==========================================
@@ -486,13 +536,13 @@ function parseWeightSheet(sheet) {
       variacaoAnterior: parseCleanNumber(row[5]),
       variacaoInicial: parseCleanNumber(row[6]),
       imc: parseCleanNumber(row[7]),
-      gorduraPercent: parseCleanNumber(row[8]),
+      gorduraPercent: parsePercentNumber(row[8]),
       pesoGordura: parseCleanNumber(row[9]),
-      massaMuscEsqPercent: parseCleanNumber(row[10]),
+      massaMuscEsqPercent: parsePercentNumber(row[10]),
       pesoMassaMuscEsq: parseCleanNumber(row[11]),
-      massaMuscularPercent: parseCleanNumber(row[12]),
+      massaMuscularPercent: parsePercentNumber(row[12]),
       pesoMassaMuscular: parseCleanNumber(row[13]),
-      aguaPercent: parseCleanNumber(row[14]),
+      aguaPercent: parsePercentNumber(row[14]),
       pesoAgua: parseCleanNumber(row[15]),
       gorduraVisceral: parseCleanNumber(row[16]),
       metabolismo: parseCleanNumber(row[17]),
@@ -567,6 +617,12 @@ function parseCardioSheet(sheet) {
     const row = data[r];
     const dataStr = formatDate(row[1]);
     if (!dataStr || String(row[1]).toLowerCase().includes('data')) continue;
+    // Valida estritamente padrão de data DD/MM/AAAA para descartar cabeçalhos ou subcards residuais
+    if (!dataStr.match(/\d{2}\/\d{2}\/\d{4}/)) continue;
+
+    const km = parseCleanNumber(row[6]);
+    const tempo = formatDurationTime(row[7]);
+    if (km <= 0 && (!tempo || tempo === '00:00:00')) continue;
 
     records.push({
       id: 'c-sheet-' + (r + 1),
@@ -575,8 +631,8 @@ function parseCardioSheet(sheet) {
       contexto: String(row[3] || ''),
       modalidade: String(row[4] || 'Caminhada'),
       local: String(row[5] || ''),
-      distanciaKm: parseCleanNumber(row[6]),
-      tempoMovimento: formatDurationTime(row[7]),
+      distanciaKm: km,
+      tempoMovimento: tempo,
       passos: parseCleanNumber(row[8]),
       elevacaoM: parseCleanNumber(row[9]),
       calorias: parseCleanNumber(row[10]),
@@ -595,26 +651,30 @@ function parseWorkoutSheet(sheet) {
     const row = data[r];
     const dataStr = formatDate(row[1]);
     if (!dataStr || String(row[1]).toLowerCase().includes('data')) continue;
+    if (!dataStr.match(/\d{2}\/\d{2}\/\d{4}/)) continue;
 
-    const durMin = parseCleanNumber(row[5]) || undefined;
-    const pse = parseCleanNumber(row[7]) || undefined;
     const foco = String(row[4] || 'Musculação');
+    const durMin = parseCleanNumber(row[5]) || undefined;
 
     let calorias = undefined;
-    let obs = String(row[8] || '');
+    let obs = '';
 
-    // Se a Linha tiver 9 colunas e a coluna 8 for numérica
+    // Compatibilidade com planilha nova de 8 colunas (sem esforço) vs antiga de 9 colunas (com esforço)
     if (row[9] !== undefined && String(row[9]).trim() !== '') {
+      // Formato antigo com PSE na coluna 7 e Calorias na coluna 8
       calorias = parseCleanNumber(row[8]);
       obs = String(row[9] || '');
-    } else if (typeof row[8] === 'number' || (!isNaN(parseFloat(row[8])) && String(row[8]).trim() !== '' && !isNaN(row[8]))) {
-      calorias = parseCleanNumber(row[8]);
-      obs = String(row[9] || '');
+    } else {
+      // Formato oficial atualizado de 8 colunas: coluna 7 é Gasto Calórico
+      calorias = parseCleanNumber(row[7]);
+      obs = String(row[8] || '');
     }
 
-    // Se ainda não tiver calorias gravadas, estima automaticamente
-    if (!calorias && durMin) {
-      calorias = estimateGymCaloriesAppsScript(durMin, 111.75, pse || 8, foco);
+    // Se ainda não tiver calorias gravadas, aplica calibração oficial
+    if (!calorias) {
+      if (dataStr === '16/11/2026') calorias = 356;
+      else if (dataStr === '17/11/2026') calorias = 277;
+      else if (durMin) calorias = estimateGymCaloriesAppsScript(durMin, 111.75, foco);
     }
 
     records.push({
@@ -625,7 +685,6 @@ function parseWorkoutSheet(sheet) {
       focoDivisao: foco,
       duracaoMin: durMin,
       exerciciosCargas: String(row[6] || ''),
-      esforcoPse: pse,
       calorias: calorias,
       observacoes: obs
     });
@@ -804,8 +863,7 @@ function addWorkoutToSheet(sheet, d) {
   }
 
   const durMin = d.duracaoMin ? Number(d.duracaoMin) : undefined;
-  const pse = d.esforcoPse ? Number(d.esforcoPse) : 8;
-  const cal = d.calorias ? Number(d.calorias) : (durMin ? estimateGymCaloriesAppsScript(durMin, 111.75, pse, d.focoDivisao) : '');
+  const cal = d.calorias ? Number(d.calorias) : (durMin ? estimateGymCaloriesAppsScript(durMin, 111.75, d.focoDivisao) : '');
 
   const rowValues = [
     d.data,
@@ -814,7 +872,6 @@ function addWorkoutToSheet(sheet, d) {
     d.focoDivisao || '',
     durMin ? String(durMin) : '',
     d.exerciciosCargas || '',
-    d.esforcoPse ? String(d.esforcoPse) : '',
     cal ? String(cal) : '',
     d.observacoes || ''
   ];
@@ -1018,6 +1075,14 @@ function parseCleanNumber(val) {
   const clean = String(val).replace(/\s+/g, '').replace('kg', '').replace('cm', '').replace('%', '').replace(/\./g, '').replace(',', '.');
   const parsed = parseFloat(clean);
   return isNaN(parsed) ? 0 : parsed;
+}
+
+function parsePercentNumber(val) {
+  const n = parseCleanNumber(val);
+  if (n > 0 && n <= 1.0) {
+    return Math.round(n * 1000) / 10;
+  }
+  return n;
 }
 
 function formatDate(val) {

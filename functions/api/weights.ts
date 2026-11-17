@@ -53,6 +53,16 @@ const BASELINE_WEIGHTS = [
   },
 ];
 
+function normalizePercent(val: any): number {
+  if (val === undefined || val === null || val === '') return 0;
+  const num = typeof val === 'number' ? val : parseFloat(String(val).replace(/\./g, '').replace(',', '.'));
+  if (isNaN(num)) return 0;
+  if (num > 0 && num <= 1.0) {
+    return Math.round(num * 1000) / 10;
+  }
+  return num;
+}
+
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   const { env } = context;
 
@@ -65,7 +75,14 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       if (res.ok) {
         const json: any = await res.json();
         if (json.status === 'success' && Array.isArray(json.data) && json.data.length > 0) {
-          return new Response(JSON.stringify(json.data), {
+          const cleaned = json.data.map((w: any) => ({
+            ...w,
+            gorduraPercent: normalizePercent(w.gorduraPercent),
+            massaMuscularPercent: normalizePercent(w.massaMuscularPercent),
+            massaMuscEsqPercent: normalizePercent(w.massaMuscEsqPercent),
+            aguaPercent: normalizePercent(w.aguaPercent),
+          }));
+          return new Response(JSON.stringify(cleaned), {
             headers: { 'Content-Type': 'application/json' },
           });
         }

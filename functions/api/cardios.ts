@@ -38,10 +38,12 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       if (res.ok) {
         const json: any = await res.json();
         if (json.status === 'success' && Array.isArray(json.data)) {
-          const cleaned = json.data.map((item: any) => ({
-            ...item,
-            tempoMovimento: cleanDuration(item.tempoMovimento),
-          }));
+          const cleaned = json.data
+            .filter((item: any) => item && item.data && String(item.data).match(/\d{2}\/\d{2}\/\d{4}/) && !String(item.data).toLowerCase().includes('data'))
+            .map((item: any) => ({
+              ...item,
+              tempoMovimento: cleanDuration(item.tempoMovimento),
+            }));
           return new Response(JSON.stringify(cleaned), {
             headers: { 'Content-Type': 'application/json' },
           });

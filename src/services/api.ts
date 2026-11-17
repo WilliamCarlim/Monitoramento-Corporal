@@ -27,6 +27,16 @@ interface FetchResponse<T> {
 // SANITIZERS
 // ----------------------------------------------------------------------
 
+function normalizePercent(val: any): number {
+  if (val === undefined || val === null || val === '') return 0;
+  const num = typeof val === 'number' ? val : parseFloat(String(val).replace(/\./g, '').replace(',', '.'));
+  if (isNaN(num)) return 0;
+  if (num > 0 && num <= 1.0) {
+    return Math.round(num * 1000) / 10;
+  }
+  return num;
+}
+
 function sanitizeWeights(list: any[]): WeightRecord[] {
   if (!Array.isArray(list)) return [];
   return list
@@ -48,12 +58,17 @@ function sanitizeWeights(list: any[]): WeightRecord[] {
         peso: p,
         variacaoAnterior: isNaN(varAnt) ? 0 : varAnt,
         variacaoInicial: isNaN(varIni) ? 0 : varIni,
+        gorduraPercent: normalizePercent(w.gorduraPercent),
+        massaMuscularPercent: normalizePercent(w.massaMuscularPercent),
+        massaMuscEsqPercent: normalizePercent(w.massaMuscEsqPercent),
+        aguaPercent: normalizePercent(w.aguaPercent),
         data: cleanDate,
       };
     })
     .filter((w) => {
       if (!w || !w.data) return false;
       const dataStr = String(w.data).trim().toLowerCase();
+      if (!dataStr.match(/\d{2}\/\d{2}\/\d{4}/)) return false;
       if (dataStr === 'data' || dataStr.includes('acompanhamento') || dataStr.includes('controle')) return false;
       return typeof w.peso === 'number' && w.peso > 30 && w.peso < 350;
     });
@@ -104,21 +119,35 @@ function sanitizeCardios(list: any[]): CardioRecord[] {
     .filter((c) => {
       if (!c || !c.data) return false;
       const dataStr = String(c.data).trim().toLowerCase();
-      return dataStr !== 'data' && (c.distanciaKm > 0 || c.calorias > 0 || (c.tempoMovimento && c.tempoMovimento !== ''));
+      if (!dataStr.match(/\d{2}\/\d{2}\/\d{4}/)) return false;
+      if (dataStr === 'data' || dataStr.includes('acompanhamento') || dataStr.includes('cardio') || dataStr.includes('treinos')) return false;
+      const dist = typeof c.distanciaKm === 'number' ? c.distanciaKm : parseFloat(String(c.distanciaKm).replace(',', '.'));
+      const cal = typeof c.calorias === 'number' ? c.calorias : parseFloat(String(c.calorias));
+      return (dist > 0 || cal > 0 || (c.tempoMovimento && c.tempoMovimento !== '00:00:00'));
     })
     .map((c) => ({
       ...c,
+      distanciaKm: typeof c.distanciaKm === 'number' ? c.distanciaKm : parseFloat(String(c.distanciaKm).replace(',', '.')) || 0,
+      calorias: typeof c.calorias === 'number' ? c.calorias : parseInt(String(c.calorias), 10) || 0,
       tempoMovimento: cleanDurationString(c.tempoMovimento),
     }));
 }
 
 function sanitizeWorkouts(list: any[]): WorkoutRecord[] {
   if (!Array.isArray(list)) return [];
-  return list.filter((w) => {
-    if (!w || !w.data) return false;
-    const dataStr = String(w.data).trim().toLowerCase();
-    return dataStr !== 'data' && (w.focoDivisao || w.exerciciosCargas);
-  });
+  return list
+    .filter((w) => {
+      if (!w || !w.data) return false;
+      const dataStr = String(w.data).trim().toLowerCase();
+      if (!dataStr.match(/\d{2}\/\d{2}\/\d{4}/)) return false;
+      if (dataStr === 'data' || dataStr.includes('treinos') || dataStr.includes('musculação')) return false;
+      return (w.focoDivisao || w.exerciciosCargas || w.duracaoMin);
+    })
+    .map((w) => ({
+      ...w,
+      duracaoMin: typeof w.duracaoMin === 'number' ? w.duracaoMin : parseInt(String(w.duracaoMin), 10) || undefined,
+      calorias: typeof w.calorias === 'number' ? w.calorias : parseInt(String(w.calorias), 10) || undefined,
+    }));
 }
 
 function sanitizePhotos(list: any[]): PhotoRecord[] {

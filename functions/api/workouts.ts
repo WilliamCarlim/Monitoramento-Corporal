@@ -9,7 +9,6 @@ const BASELINE_WORKOUTS = [
     focoDivisao: 'Peitoral / Tríceps',
     duracaoMin: 55,
     exerciciosCargas: 'Supino reto com barra - 3 séries (30kg máquina); Supino inclinado com halteres - 3 séries (15 cada lado máquina); Peck deck - 3 séries (50); Crucifixo na polia - 3 séries (7.5); Tríceps francês - 3 séries; Tríceps corda - 3 séries (17.5); Tríceps testa com halteres - 3 séries',
-    esforcoPse: 8,
     calorias: 356,
     observacoes: '7 exercícios executados • Fast fit • Ficha: Abcde w hipertrofi...',
   },
@@ -21,7 +20,6 @@ const BASELINE_WORKOUTS = [
     focoDivisao: 'Quadríceps',
     duracaoMin: 40,
     exerciciosCargas: 'Agachamento máquina - 4 séries; Leg press 45° - 4 séries; Cadeira extensora - 4 séries; Panturrilha no leg - 3 séries',
-    esforcoPse: 8,
     calorias: 277,
     observacoes: 'Treino de pernas / quadríceps executado • Fast fit • 11:59',
   },
@@ -38,7 +36,24 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       if (res.ok) {
         const json: any = await res.json();
         if (json.status === 'success' && Array.isArray(json.data)) {
-          return new Response(JSON.stringify(json.data), {
+          const cleaned = json.data
+            .filter((w: any) => w && w.data && String(w.data).match(/\d{2}\/\d{2}\/\d{4}/) && !String(w.data).toLowerCase().includes('data'))
+            .map((w: any) => {
+              let cal = w.calorias;
+              if (!cal) {
+                if (w.data === '16/11/2026') cal = 356;
+                else if (w.data === '17/11/2026') cal = 277;
+                else if (w.duracaoMin) {
+                  const met = String(w.focoDivisao || '').toLowerCase().includes('quad') || String(w.focoDivisao || '').toLowerCase().includes('perna') ? 3.72 : 3.47;
+                  cal = Math.round(met * 111.75 * (w.duracaoMin / 60));
+                }
+              }
+              return {
+                ...w,
+                calorias: cal,
+              };
+            });
+          return new Response(JSON.stringify(cleaned), {
             headers: { 'Content-Type': 'application/json' },
           });
         }

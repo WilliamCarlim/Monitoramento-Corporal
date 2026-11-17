@@ -107,7 +107,6 @@ export const INITIAL_WORKOUT_RECORDS: WorkoutRecord[] = [
     focoDivisao: 'Peitoral / Tríceps',
     duracaoMin: 55,
     exerciciosCargas: 'Supino reto com barra - 3 séries (30kg máquina); Supino inclinado com halteres - 3 séries (15 cada lado máquina); Peck deck - 3 séries (50); Crucifixo na polia - 3 séries (7.5); Tríceps francês - 3 séries; Tríceps corda - 3 séries (17.5); Tríceps testa com halteres - 3 séries',
-    esforcoPse: 8,
     calorias: 356,
     observacoes: '7 exercícios executados • Fast fit • Ficha: Abcde w hipertrofi...',
   },
@@ -119,7 +118,6 @@ export const INITIAL_WORKOUT_RECORDS: WorkoutRecord[] = [
     focoDivisao: 'Quadríceps',
     duracaoMin: 40,
     exerciciosCargas: 'Agachamento máquina - 4 séries; Leg press 45° - 4 séries; Cadeira extensora - 4 séries; Panturrilha no leg - 3 séries',
-    esforcoPse: 8,
     calorias: 277,
     observacoes: 'Treino de pernas / quadríceps executado • Fast fit • 11:59',
   },
@@ -138,13 +136,13 @@ export const INITIAL_PHOTO_RECORDS: PhotoRecord[] = [
 ];
 
 const STORAGE_KEYS = {
-  WEIGHTS: 'mc_weight_records_v4',
-  MEASURES: 'mc_measure_records_v4',
-  CARDIOS: 'mc_cardio_records_v4',
-  WORKOUTS: 'mc_workout_records_v4',
-  PHOTOS: 'mc_photo_records_v4',
-  PROFILE: 'mc_user_profile_v4',
-  API_CONFIG: 'mc_api_config_v4',
+  WEIGHTS: 'mc_weight_records_v5',
+  MEASURES: 'mc_measure_records_v5',
+  CARDIOS: 'mc_cardio_records_v5',
+  WORKOUTS: 'mc_workout_records_v5',
+  PHOTOS: 'mc_photo_records_v5',
+  PROFILE: 'mc_user_profile_v5',
+  API_CONFIG: 'mc_api_config_v5',
 };
 
 export function getStoredWeights(): WeightRecord[] {

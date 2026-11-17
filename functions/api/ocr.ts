@@ -135,7 +135,12 @@ Retorne EXCLUSIVAMENTE um objeto JSON válido, sem crases:
   }
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const CANDIDATE_MODELS = [
+      'gemini-3.5-flash-lite',
+      'gemini-3.8-flash',
+      'gemini-2.5-flash',
+      'gemini-1.5-flash',
+    ];
 
     const geminiPayload = {
       contents: [
@@ -153,33 +158,47 @@ Retorne EXCLUSIVAMENTE um objeto JSON válido, sem crases:
         },
       ],
       generationConfig: {
-        temperature: 0.2,
+        temperature: 0.1,
         maxOutputTokens: 1500,
       },
     };
 
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(geminiPayload),
-    });
+    let lastError = '';
+    let successData: any = null;
 
-    if (!res.ok) {
-      const errText = await res.text();
-      return new Response(JSON.stringify({ error: `Gemini OCR error: ${errText}` }), { status: 500 });
+    for (const model of CANDIDATE_MODELS) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(geminiPayload),
+        });
+
+        if (res.ok) {
+          const data: any = await res.json();
+          const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+
+          // Extrai o bloco JSON { ... } de forma robusta
+          const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+          const cleanedJsonText = jsonMatch ? jsonMatch[0] : rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+
+          const parsedJson = JSON.parse(cleanedJsonText);
+          successData = parsedJson;
+          break;
+        } else {
+          lastError = await res.text();
+        }
+      } catch (err: any) {
+        lastError = err.message || String(err);
+      }
     }
 
-    const data: any = await res.json();
-    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+    if (!successData) {
+      return new Response(JSON.stringify({ error: `Gemini OCR error: ${lastError}` }), { status: 500 });
+    }
 
-    // Limpar possíveis crases de markdown ```json ... ```
-    const cleanedJsonText = rawText
-      .replace(/```json/gi, '')
-      .replace(/```/g, '')
-      .trim();
-
-    const parsedJson = JSON.parse(cleanedJsonText);
-    return new Response(JSON.stringify({ success: true, data: parsedJson }), {
+    return new Response(JSON.stringify({ success: true, data: successData }), {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error: any) {

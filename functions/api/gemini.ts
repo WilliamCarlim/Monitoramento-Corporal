@@ -63,7 +63,12 @@ Diretrizes de Atuação:
 5. Estruture suas respostas usando títulos em Markdown, listas e destaques em negrito.`;
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const CANDIDATE_MODELS = [
+      'gemini-3.5-flash-lite',
+      'gemini-3.8-flash',
+      'gemini-2.5-flash',
+      'gemini-1.5-flash',
+    ];
 
     const contents = [
       ...history.map((h: any) => ({
@@ -76,38 +81,57 @@ Diretrizes de Atuação:
       },
     ];
 
-    const geminiRes = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        systemInstruction: {
-          parts: [{ text: systemInstruction }],
-        },
-        contents,
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 1500,
-        },
-      }),
-    });
+    const payload = {
+      systemInstruction: {
+        parts: [{ text: systemInstruction }],
+      },
+      contents,
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 1500,
+      },
+    };
 
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text();
+    let lastError = '';
+    let replyText = '';
+
+    for (const model of CANDIDATE_MODELS) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        const geminiRes = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (geminiRes.ok) {
+          const data: any = await geminiRes.json();
+          replyText =
+            data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+            'Não foi possível gerar uma resposta analítica no momento.';
+          break;
+        } else {
+          lastError = await geminiRes.text();
+        }
+      } catch (err: any) {
+        lastError = err.message || String(err);
+      }
+    }
+
+    if (!replyText) {
       return new Response(
         JSON.stringify({
-          error: `Gemini API returned error (${geminiRes.status}): ${errText}`,
-          text: `Erro ao consultar Gemini (${geminiRes.status}). Verifique se sua chave de API possui cotas e permissões ativas.`,
+          error: `Gemini API returned error: ${lastError}`,
+          text: `Erro ao consultar Gemini. Verifique se sua chave de API possui cotas e permissões ativas. Detalhes: ${lastError}`,
         }),
         { headers: { 'Content-Type': 'application/json' }, status: 500 }
       );
     }
 
-    const data: any = await geminiRes.json();
-    const replyText =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-      'Não foi possível gerar uma resposta analítica no momento.';
-
     return new Response(JSON.stringify({ text: replyText }), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error: any) {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error: any) {

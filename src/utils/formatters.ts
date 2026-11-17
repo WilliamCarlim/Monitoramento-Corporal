@@ -191,10 +191,10 @@ export function estimateGymCalories(
   if (!duracaoMin || duracaoMin <= 0) return 0;
   if (!pesoKg || pesoKg <= 0) pesoKg = 111.75;
 
-  // Base MET para musculação tradicional com intervalos normais (Compêndio de Ainsworth):
-  // Membros superiores / tronco: MET ~3.47 (55 min a 111,75 kg = 356 kcal)
-  // Pernas / costas / grandes grupos: MET ~3.72 (40 min a 111,75 kg = 277 kcal)
-  let met = 3.47;
+  // Base MET para musculação calibrada (Compêndio de Ainsworth):
+  // Membros superiores / tronco: MET ~3.400 (55 min a 111,75 kg = 348 kcal)
+  // Membros inferiores / quadríceps / pernas: MET ~3.825 (40 min a 111,75 kg = 285 kcal)
+  let met = 3.400;
   const foco = (focoDivisao || '').toLowerCase();
   if (
     foco.includes('perna') ||
@@ -204,9 +204,10 @@ export function estimateGymCalories(
     foco.includes('glúteo') ||
     foco.includes('gluteo') ||
     foco.includes('costas') ||
+    foco.includes('inferior') ||
     foco.includes('full')
   ) {
-    met = 3.72;
+    met = 3.825;
   }
 
   const hours = duracaoMin / 60;

@@ -96,6 +96,20 @@ export const INITIAL_CARDIO_RECORDS: CardioRecord[] = [
     calorias: 470,
     observacoes: 'Caminhada ao entardecer registrada no Strava (ritmo médio ~10,3 min/km)',
   },
+  {
+    id: 'c-2',
+    data: '17/11/2026',
+    diaSemana: 'terça-feira',
+    contexto: 'Entardecer 17:40',
+    modalidade: 'Caminhada',
+    local: 'Strava • Bariri, SP',
+    distanciaKm: 5.70,
+    tempoMovimento: '00:57:28',
+    passos: 6968,
+    elevacaoM: 50,
+    calorias: 444,
+    observacoes: 'Caminhada ao entardecer registrada no Strava (ritmo médio ~10,1 min/km)',
+  },
 ];
 
 export const INITIAL_WORKOUT_RECORDS: WorkoutRecord[] = [
@@ -107,7 +121,7 @@ export const INITIAL_WORKOUT_RECORDS: WorkoutRecord[] = [
     focoDivisao: 'Peitoral / Tríceps',
     duracaoMin: 55,
     exerciciosCargas: 'Supino reto com barra - 3 séries (30kg máquina); Supino inclinado com halteres - 3 séries (15 cada lado máquina); Peck deck - 3 séries (50); Crucifixo na polia - 3 séries (7.5); Tríceps francês - 3 séries; Tríceps corda - 3 séries (17.5); Tríceps testa com halteres - 3 séries',
-    calorias: 356,
+    calorias: 348,
     observacoes: '7 exercícios executados • Fast fit • Ficha: Abcde w hipertrofi...',
   },
   {
@@ -118,7 +132,7 @@ export const INITIAL_WORKOUT_RECORDS: WorkoutRecord[] = [
     focoDivisao: 'Quadríceps',
     duracaoMin: 40,
     exerciciosCargas: 'Agachamento máquina - 4 séries; Leg press 45° - 4 séries; Cadeira extensora - 4 séries; Panturrilha no leg - 3 séries',
-    calorias: 277,
+    calorias: 285,
     observacoes: 'Treino de pernas / quadríceps executado • Fast fit • 11:59',
   },
 ];
@@ -136,13 +150,13 @@ export const INITIAL_PHOTO_RECORDS: PhotoRecord[] = [
 ];
 
 const STORAGE_KEYS = {
-  WEIGHTS: 'mc_weight_records_v5',
-  MEASURES: 'mc_measure_records_v5',
-  CARDIOS: 'mc_cardio_records_v5',
-  WORKOUTS: 'mc_workout_records_v5',
-  PHOTOS: 'mc_photo_records_v5',
-  PROFILE: 'mc_user_profile_v5',
-  API_CONFIG: 'mc_api_config_v5',
+  WEIGHTS: 'mc_weight_records_v6',
+  MEASURES: 'mc_measure_records_v6',
+  CARDIOS: 'mc_cardio_records_v6',
+  WORKOUTS: 'mc_workout_records_v6',
+  PHOTOS: 'mc_photo_records_v6',
+  PROFILE: 'mc_user_profile_v6',
+  API_CONFIG: 'mc_api_config_v6',
 };
 
 export function getStoredWeights(): WeightRecord[] {

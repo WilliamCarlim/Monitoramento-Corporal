@@ -15,6 +15,20 @@ const BASELINE_CARDIOS = [
     calorias: 470,
     observacoes: 'Caminhada ao entardecer registrada no Strava (ritmo médio ~10,3 min/km)',
   },
+  {
+    id: 'c-2',
+    data: '17/11/2026',
+    diaSemana: 'terça-feira',
+    contexto: 'Entardecer 17:40',
+    modalidade: 'Caminhada',
+    local: 'Strava • Bariri, SP',
+    distanciaKm: 5.70,
+    tempoMovimento: '00:57:28',
+    passos: 6968,
+    elevacaoM: 50,
+    calorias: 444,
+    observacoes: 'Caminhada ao entardecer registrada no Strava (ritmo médio ~10,1 min/km)',
+  },
 ];
 
 function cleanDuration(val: any): string {

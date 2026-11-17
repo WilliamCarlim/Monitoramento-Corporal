@@ -261,15 +261,25 @@ function organizarAbaCardio(ss) {
   sheet.getRange(9, 2, 1, header.length).setValues([header]);
   sheet.getRange(9, 2, 1, header.length).setFontWeight('bold').setBackground('#0284c7').setFontColor('#ffffff');
 
-  // 3. Registro inicial na Linha 10 (garante apenas 1 registro oficial)
+  // 3. Registros oficiais: Linha 10 (16/11) e Linha 11 (17/11)
   const val10 = sheet.getRange(10, 2).getValue();
   if (!val10 || String(val10).toLowerCase().includes('data')) {
-    const row = [
+    const row1 = [
       '16/11/2026', 'segunda-feira', 'Entardecer 18:12', 'Caminhada', 'Strava • Bariri, SP',
       '5,70', '00:58:43', '6.944', '51', '470',
       'Caminhada ao entardecer registrada no Strava (ritmo médio ~10,3 min/km)'
     ];
-    sheet.getRange(10, 2, 1, row.length).setValues([row]);
+    sheet.getRange(10, 2, 1, row1.length).setValues([row1]);
+  }
+
+  const val11 = sheet.getRange(11, 2).getValue();
+  if (!val11 || String(val11).trim() === '') {
+    const row2 = [
+      '17/11/2026', 'terça-feira', 'Entardecer 17:40', 'Caminhada', 'Strava • Bariri, SP',
+      '5,70', '00:57:28', '6.968', '50', '444',
+      'Caminhada ao entardecer registrada no Strava (ritmo médio ~10,1 min/km)'
+    ];
+    sheet.getRange(11, 2, 1, row2.length).setValues([row2]);
   }
 
   // Validação suspensa para Modalidades na coluna E (coluna 5, que é B=2, C=3, D=4, E=5)
@@ -332,14 +342,15 @@ function atualizarCardsCardio(sheet) {
     const h = Math.floor(sec / 3600);
     const m = Math.floor((sec % 3600) / 60);
     const s = sec % 60;
-    return `${String(h)}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   };
 
-  const timeFormatted = totalSeconds > 0 ? formatSec(totalSeconds) : '0:58:43';
+  const timeFormatted = totalSeconds > 0 ? formatSec(totalSeconds) : '01:56:11';
 
   const titles = [
     'TOTAL ATIVIDADES', 'DISTÂNCIA TOTAL', 'TEMPO TOTAL', 'TEMPO MENSAL', 'TEMPO SEMANAL',
-    'PASSOS TOTAIS', 'CALORIAS TOTAL', 'CALORIAS MENSAL', 'CALORIAS SEMANAL',
+    'PASSOS TOTAL', 'PASSOS MENSAL', 'PASSOS SEMANAL',
+    'CALORIAS TOTAL', 'CALORIAS MENSAL', 'CALORIAS SEMANAL',
     'CAMINHADA TOTAL', 'CAMINHADA MÊS', 'CAMINHADA SEM', 'BIKE TOTAL', 'BIKE MÊS', 'BIKE SEM'
   ];
 
@@ -349,6 +360,8 @@ function atualizarCardsCardio(sheet) {
     timeFormatted,
     timeFormatted,
     timeFormatted,
+    `${totalPassos.toLocaleString('pt-BR')} passos`,
+    `${totalPassos.toLocaleString('pt-BR')} passos`,
     `${totalPassos.toLocaleString('pt-BR')} passos`,
     `${totalKcal.toLocaleString('pt-BR')} kcal`,
     `${totalKcal.toLocaleString('pt-BR')} kcal`,
@@ -363,7 +376,8 @@ function atualizarCardsCardio(sheet) {
 
   const subtitles = [
     'Sessões registradas', 'Quilometragem geral', 'Duração geral', 'No mês corrente', 'Na semana corrente',
-    'Passos acumulados', 'Gasto calórico total', 'No mês corrente', 'Na semana corrente',
+    'Passos acumulados', 'No mês corrente', 'Na semana corrente',
+    'Gasto calórico total', 'No mês corrente', 'Na semana corrente',
     'A pé acumulado', 'A pé no mês', 'A pé na semana', 'Ciclismo total', 'Ciclismo no mês', 'Ciclismo na semana'
   ];
 
@@ -396,14 +410,14 @@ function organizarAbaTreinos(ss) {
   sheet.getRange(9, 2, 1, header.length).setValues([header]);
   sheet.getRange(9, 2, 1, header.length).setFontWeight('bold').setBackground('#7c3aed').setFontColor('#ffffff');
 
-  // 3. Registros oficiais: Linha 10 (16/11 Peitoral/Tríceps) e Linha 11 (17/11 Quadríceps)
+  // 3. Registros oficiais: Linha 10 (16/11 Peitoral/Tríceps, 348 kcal) e Linha 11 (17/11 Quadríceps, 285 kcal)
   const val10 = sheet.getRange(10, 2).getValue();
   if (!val10 || String(val10).toLowerCase().includes('data')) {
     const row1 = [
       '16/11/2026', 'segunda-feira', 'Academia Fast fit', 'Peitoral / Tríceps',
       '55',
       'Supino reto com barra - 3 séries (30kg máquina); Supino inclinado com halteres - 3 séries (15 cada lado máquina); Peck deck - 3 séries (50); Crucifixo na polia - 3 séries (7.5); Tríceps francês - 3 séries; Tríceps corda - 3 séries (17.5); Tríceps testa com halteres - 3 séries',
-      '356',
+      '348',
       '7 exercícios executados • Fast fit • Ficha: Abcde w hipertrofi...'
     ];
     sheet.getRange(10, 2, 1, row1.length).setValues([row1]);
@@ -415,7 +429,7 @@ function organizarAbaTreinos(ss) {
       '17/11/2026', 'terça-feira', 'Academia (Fast fit) • 11:59', 'Quadríceps',
       '40',
       'Agachamento livre - 3 séries (60kg); Leg press 45 graus - 3 séries (160kg); Cadeira extensora - 3 séries (70kg); Cadeira adutora - 3 séries (60kg); Cadeira abdutora - 3 séries (60kg); Panturrilha no leg press - 3 séries (120kg)',
-      '277',
+      '285',
       '6 exercícios executados • Fast fit • Ficha: Abcde w hipertrofi...'
     ];
     sheet.getRange(11, 2, 1, row2.length).setValues([row2]);
@@ -428,10 +442,20 @@ function organizarAbaTreinos(ss) {
 function estimateGymCaloriesAppsScript(duracaoMin, pesoKg, focoDivisao) {
   if (!duracaoMin || duracaoMin <= 0) return 0;
   if (!pesoKg || pesoKg <= 0) pesoKg = 111.75;
-  let met = 3.47;
+  let met = 3.400; // Membros superiores / tronco (~348 kcal em 55 min)
   const foco = String(focoDivisao || '').toLowerCase();
-  if (foco.includes('perna') || foco.includes('quadríceps') || foco.includes('coxa') || foco.includes('glúteo') || foco.includes('costas') || foco.includes('full')) {
-    met = 3.72;
+  if (
+    foco.includes('perna') ||
+    foco.includes('quadríceps') ||
+    foco.includes('quadriceps') ||
+    foco.includes('coxa') ||
+    foco.includes('glúteo') ||
+    foco.includes('gluteo') ||
+    foco.includes('costas') ||
+    foco.includes('inferior') ||
+    foco.includes('full')
+  ) {
+    met = 3.825; // Membros inferiores (~285 kcal em 40 min)
   }
   return Math.round(met * pesoKg * (duracaoMin / 60));
 }
@@ -671,8 +695,8 @@ function parseWorkoutSheet(sheet) {
 
     // Se ainda não tiver calorias gravadas, aplica calibração oficial
     if (!calorias) {
-      if (dataStr === '16/11/2026') calorias = 356;
-      else if (dataStr === '17/11/2026') calorias = 277;
+      if (dataStr === '16/11/2026') calorias = 348;
+      else if (dataStr === '17/11/2026') calorias = 285;
       else if (durMin) calorias = estimateGymCaloriesAppsScript(durMin, 111.75, foco);
     }
 

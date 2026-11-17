@@ -43,7 +43,8 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ latestWeight, onSubmit
   const [contexto, setContexto] = useState<string>('Academia Fast fit');
   const [focoDivisao, setFocoDivisao] = useState<string>('Peitoral / Tríceps');
   const [duracaoMin, setDuracaoMin] = useState<string>('55');
-  const [calorias, setCalorias] = useState<string>('356');
+  const [esforcoPse, setEsforcoPse] = useState<string>('8');
+  const [calorias, setCalorias] = useState<string>('348');
   const [exerciciosCargas, setExerciciosCargas] = useState<string>(
     'Supino reto com barra - 3 séries (30kg máquina); Supino inclinado com halteres - 3 séries (15 cada lado máquina); Peck deck - 3 séries (50); Crucifixo na polia - 3 séries (7.5); Tríceps francês - 3 séries; Tríceps corda - 3 séries (17.5); Tríceps testa com halteres - 3 séries'
   );
@@ -157,6 +158,12 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ latestWeight, onSubmit
     setLoading(true);
     setFeedback(null);
 
+    const pseNum = esforcoPse ? parseInt(esforcoPse, 10) : undefined;
+    let finalObs = observacoes;
+    if (pseNum && !finalObs.includes('PSE')) {
+      finalObs = finalObs ? `${finalObs} • PSE: ${pseNum}/10` : `PSE: ${pseNum}/10`;
+    }
+
     const record: WorkoutRecord = {
       data,
       diaSemana,
@@ -165,7 +172,8 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ latestWeight, onSubmit
       duracaoMin: duracaoMin ? parseInt(duracaoMin, 10) : undefined,
       exerciciosCargas,
       calorias: calorias ? parseInt(calorias, 10) : undefined,
-      observacoes,
+      esforcoPse: pseNum,
+      observacoes: finalObs,
     };
 
     try {
@@ -350,7 +358,24 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ latestWeight, onSubmit
               placeholder="Ex: 55"
               className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white text-sm focus:border-purple-500 focus:outline-none font-bold"
             />
-            <p className="text-[10px] text-slate-400 mt-1">Tempo total de sessão.</p>
+            <p className="text-[10px] text-slate-400 mt-1">Opcional / editável.</p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center gap-1.5">
+              <Activity className="w-3.5 h-3.5 text-teal-400" />
+              Esforço (PSE 1-10)
+            </label>
+            <input
+              type="number"
+              min="1"
+              max="10"
+              value={esforcoPse}
+              onChange={(e) => setEsforcoPse(e.target.value)}
+              placeholder="Ex: 8"
+              className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white text-sm focus:border-purple-500 focus:outline-none font-bold"
+            />
+            <p className="text-[10px] text-slate-400 mt-1">Opcional (1 leve a 10 máx).</p>
           </div>
 
           <div>
@@ -362,10 +387,10 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ latestWeight, onSubmit
               type="number"
               value={calorias}
               onChange={(e) => setCalorias(e.target.value)}
-              placeholder="Ex: 356"
+              placeholder="Ex: 348"
               className="w-full bg-slate-900 border border-amber-500/50 rounded-xl px-3.5 py-2.5 text-amber-300 font-black text-sm focus:border-amber-400 focus:outline-none"
             />
-            <p className="text-[10px] text-slate-400 mt-1">Estimado pelo peso ({userWeight}kg) e duração.</p>
+            <p className="text-[10px] text-slate-400 mt-1">Fórmula MET ({userWeight}kg).</p>
           </div>
         </div>
 

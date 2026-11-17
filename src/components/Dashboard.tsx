@@ -99,6 +99,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // Cardio stats separados: Total, Mensal e Semanal
   let totalKmCardio = 0;
   let totalPassosCardio = 0;
+  let mensalPassosCardio = 0;
+  let semanalPassosCardio = 0;
   let totalCaloriasCardio = 0;
   let mensalCaloriasCardio = 0;
   let semanalCaloriasCardio = 0;
@@ -118,7 +120,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   cardios.forEach((c) => {
     const km = c.distanciaKm || 0;
     totalKmCardio += km;
-    totalPassosCardio += c.passos || 0;
+    const passos = c.passos || 0;
+    totalPassosCardio += passos;
     const cal = c.calorias || 0;
     totalCaloriasCardio += cal;
 
@@ -133,10 +136,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
     if (isSameMonth) {
       mensalCaloriasCardio += cal;
       mensalSecondsCardio += secs;
+      mensalPassosCardio += passos;
     }
     if (isSameWeek) {
       semanalCaloriasCardio += cal;
       semanalSecondsCardio += secs;
+      semanalPassosCardio += passos;
     }
 
     const mod = (c.modalidade || '').toLowerCase();
@@ -154,7 +159,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   };
 
-  const formattedCardioTime = totalSecondsCardio > 0 ? formatSecsToHms(totalSecondsCardio) : '00:58:43';
+  const formattedCardioTime = totalSecondsCardio > 0 ? formatSecsToHms(totalSecondsCardio) : '01:56:11';
   const formattedCardioTimeMonth = mensalSecondsCardio > 0 ? formatSecsToHms(mensalSecondsCardio) : formattedCardioTime;
   const formattedCardioTimeWeek = semanalSecondsCardio > 0 ? formatSecsToHms(semanalSecondsCardio) : formattedCardioTime;
 
@@ -180,8 +185,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
     let kcal = w.calorias;
     if (!kcal) {
-      if (w.data === '16/11/2026') kcal = 356;
-      else if (w.data === '17/11/2026') kcal = 277;
+      if (w.data === '16/11/2026') kcal = 348;
+      else if (w.data === '17/11/2026') kcal = 285;
       else kcal = estimateGymCalories(w.duracaoMin || 55, currentWeight, 8, w.focoDivisao);
     }
     totalCaloriasWorkout += kcal;
@@ -243,8 +248,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
     };
     let cal = w.calorias;
     if (!cal) {
-      if (w.data === '16/11/2026') cal = 356;
-      else if (w.data === '17/11/2026') cal = 277;
+      if (w.data === '16/11/2026') cal = 348;
+      else if (w.data === '17/11/2026') cal = 285;
       else cal = estimateGymCalories(w.duracaoMin || 55, currentWeight, 8, w.focoDivisao);
     }
     item.workoutKcal += cal;

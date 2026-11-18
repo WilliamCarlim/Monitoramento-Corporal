@@ -248,6 +248,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const lastWorkoutFocus = workouts.length > 0 ? workouts[workouts.length - 1].focoDivisao : 'Quadríceps';
 
+  // Consolidação de Calorias Queimadas (Cardio + Musculação)
+  const totalGeralKcal = totalCaloriasCardio + totalCaloriasWorkout;
+  const mensalGeralKcal = mensalCaloriasCardio + mensalCaloriasWorkout;
+  const semanalGeralKcal = semanalCaloriasCardio + semanalCaloriasWorkout;
+
   // Chart data: Peso e Bioimpedância
   const chartDataWeights = weights.map((w) => ({
     date: w.data,
@@ -872,6 +877,116 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </div>
 
+      {/* Cards de Calorias Queimadas (Total, Mensal e Semanal) - Centralizados Acima dos Gráficos */}
+      <div className="space-y-2.5">
+        <div className="flex items-center justify-center gap-2">
+          <div className="p-1.5 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+            <Flame className="w-4 h-4" />
+          </div>
+          <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-amber-300 text-center">
+            Consolidação de Calorias Queimadas (Cardio + Musculação)
+          </h3>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* 1. Calorias Totais (Acima do Gráfico de Peso) */}
+          <div className="bg-slate-850 border border-amber-500/40 p-4 rounded-2xl shadow-lg flex flex-col justify-between text-center relative overflow-hidden group hover:border-amber-500/60 transition">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-750">
+              <span className="text-[11px] uppercase font-bold tracking-wider text-amber-400">
+                Calorias Totais
+              </span>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                Geral Acumulado
+              </span>
+            </div>
+            <div className="my-2.5">
+              <div className="flex items-baseline justify-center gap-1.5">
+                <span className="text-2xl sm:text-3xl font-black text-amber-300 font-mono">
+                  {totalGeralKcal.toLocaleString('pt-BR')}
+                </span>
+                <span className="text-sm font-bold text-amber-400/90">kcal</span>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1">
+                Gasto energético total combinado
+              </p>
+            </div>
+            <div className="pt-2 border-t border-slate-750 flex items-center justify-around text-[11px]">
+              <span className="text-sky-400 font-medium">
+                Cardio: <strong className="font-bold text-sky-300">{totalCaloriasCardio.toLocaleString('pt-BR')}</strong>
+              </span>
+              <span className="text-slate-600">•</span>
+              <span className="text-purple-400 font-medium">
+                Treino: <strong className="font-bold text-purple-300">{totalCaloriasWorkout.toLocaleString('pt-BR')}</strong>
+              </span>
+            </div>
+          </div>
+
+          {/* 2. Calorias no Mês (No Meio, entre ambos os gráficos) */}
+          <div className="bg-slate-850 border border-orange-500/40 p-4 rounded-2xl shadow-lg flex flex-col justify-between text-center relative overflow-hidden group hover:border-orange-500/60 transition">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-750">
+              <span className="text-[11px] uppercase font-bold tracking-wider text-orange-400">
+                Calorias no Mês
+              </span>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/30">
+                Mês Corrente
+              </span>
+            </div>
+            <div className="my-2.5">
+              <div className="flex items-baseline justify-center gap-1.5">
+                <span className="text-2xl sm:text-3xl font-black text-orange-300 font-mono">
+                  {mensalGeralKcal.toLocaleString('pt-BR')}
+                </span>
+                <span className="text-sm font-bold text-orange-400/90">kcal</span>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1">
+                Queima calórica do mês atual
+              </p>
+            </div>
+            <div className="pt-2 border-t border-slate-750 flex items-center justify-around text-[11px]">
+              <span className="text-sky-400 font-medium">
+                Cardio: <strong className="font-bold text-sky-300">{mensalCaloriasCardio.toLocaleString('pt-BR')}</strong>
+              </span>
+              <span className="text-slate-600">•</span>
+              <span className="text-purple-400 font-medium">
+                Treino: <strong className="font-bold text-purple-300">{mensalCaloriasWorkout.toLocaleString('pt-BR')}</strong>
+              </span>
+            </div>
+          </div>
+
+          {/* 3. Calorias na Semana (Acima do Gráfico de Gasto Calórico) */}
+          <div className="bg-slate-850 border border-rose-500/40 p-4 rounded-2xl shadow-lg flex flex-col justify-between text-center relative overflow-hidden group hover:border-rose-500/60 transition">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-750">
+              <span className="text-[11px] uppercase font-bold tracking-wider text-rose-400">
+                Calorias na Semana
+              </span>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                Semana Corrente
+              </span>
+            </div>
+            <div className="my-2.5">
+              <div className="flex items-baseline justify-center gap-1.5">
+                <span className="text-2xl sm:text-3xl font-black text-rose-300 font-mono">
+                  {semanalGeralKcal.toLocaleString('pt-BR')}
+                </span>
+                <span className="text-sm font-bold text-rose-400/90">kcal</span>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1">
+                Queima nos últimos 7 dias
+              </p>
+            </div>
+            <div className="pt-2 border-t border-slate-750 flex items-center justify-around text-[11px]">
+              <span className="text-sky-400 font-medium">
+                Cardio: <strong className="font-bold text-sky-300">{semanalCaloriasCardio.toLocaleString('pt-BR')}</strong>
+              </span>
+              <span className="text-slate-600">•</span>
+              <span className="text-purple-400 font-medium">
+                Treino: <strong className="font-bold text-purple-300">{semanalCaloriasWorkout.toLocaleString('pt-BR')}</strong>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Chart 1: Evolução do Peso e Gordura */}
@@ -896,15 +1011,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartDataWeights} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <LineChart data={chartDataWeights} margin={{ top: 15, right: 35, left: 15, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.5} />
-                <XAxis dataKey="date" stroke="#94a3b8" fontSize={12} tickLine={false} />
+                <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} tickLine={false} />
                 <YAxis
+                  width={68}
                   stroke="#94a3b8"
-                  fontSize={12}
+                  fontSize={11}
                   tickLine={false}
-                  domain={['dataMin - 1', 'dataMax + 1']}
-                  tickFormatter={(val) => `${val}kg`}
+                  domain={['dataMin - 0.5', 'dataMax + 0.5']}
+                  tickFormatter={(val) => `${val} kg`}
                 />
                 <Tooltip
                   contentStyle={{
@@ -915,7 +1031,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   }}
                   formatter={(val: number) => [`${formatBRNumber(val, 3)} kg`, 'Peso']}
                 />
-                <ReferenceLine y={initialWeight} stroke="#64748b" strokeDasharray="4 4" label={{ value: 'Partida', fill: '#94a3b8', fontSize: 10, position: 'right' }} />
+                <ReferenceLine y={initialWeight} stroke="#64748b" strokeDasharray="4 4" label={{ value: 'Início', fill: '#94a3b8', fontSize: 10, position: 'insideTopRight' }} />
                 <Line
                   type="monotone"
                   dataKey="peso"
@@ -962,12 +1078,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartDataCalories} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+                <BarChart data={chartDataCalories} margin={{ top: 15, right: 20, left: 15, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.5} />
-                  <XAxis dataKey="date" stroke="#94a3b8" fontSize={12} tickLine={false} />
+                  <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} tickLine={false} />
                   <YAxis
+                    width={70}
                     stroke="#94a3b8"
-                    fontSize={12}
+                    fontSize={11}
                     tickLine={false}
                     tickFormatter={(val) => `${val} kcal`}
                   />

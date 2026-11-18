@@ -66,7 +66,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const currentWeight = latestWeight ? latestWeight.peso : 111.750;
   const currPeso = currentWeight;
 
-  const imcInfo = calculateIMC(currentWeight, profile.alturaMetros);
+  const userAltura = profile.alturaMetros && profile.alturaMetros !== 1.80 ? profile.alturaMetros : 1.76;
+  const imcInfo = calculateIMC(currentWeight, userAltura);
   const currImc = imcInfo.imc;
 
   // Bioimpedance metrics from latest record with percent normalization (e.g. 0.352 -> 35.2)
@@ -88,7 +89,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const initPeso = firstWeightRecord?.peso ?? (profile.pesoInicial || 113.250);
   const diffPeso = Number((currentWeight - initPeso).toFixed(3));
 
-  const initImc = firstWeightRecord?.imc ?? 34.95;
+  const initImc = firstWeightRecord?.imcApp ?? (firstWeightRecord?.peso ? Number((firstWeightRecord.peso / (userAltura * userAltura)).toFixed(2)) : 36.56);
   const diffImc = Number((imcInfo.imc - initImc).toFixed(2));
 
   const rawInitGordura = firstWeightRecord?.gorduraPercent ?? 35.6;
@@ -133,6 +134,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return new Date(y, m, d);
   };
 
+  // Helper para verificar se duas datas pertencem à mesma semana (Segunda-feira a Domingo)
+  const isSameWeekMondayToSunday = (d1: Date, d2: Date): boolean => {
+    const getMonday = (d: Date): Date => {
+      const date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      const day = date.getDay(); // 0 = Domingo, 1 = Segunda, ..., 6 = Sábado
+      const diff = day === 0 ? -6 : 1 - day;
+      date.setDate(date.getDate() + diff);
+      date.setHours(0, 0, 0, 0);
+      return date;
+    };
+
+    const monday1 = getMonday(d1);
+    const monday2 = getMonday(d2);
+    return monday1.getTime() === monday2.getTime();
+  };
+
   // Cardio stats separados: Total, Mensal e Semanal
   let totalKmCardio = 0;
   let mensalKmCardio = 0;
@@ -147,7 +164,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
   let mensalSecondsCardio = 0;
   let semanalSecondsCardio = 0;
   let caminhadaKm = 0;
+  let caminhadaMensalKm = 0;
+  let caminhadaSemanalKm = 0;
   let bikeKm = 0;
+  let bikeMensalKm = 0;
+  let bikeSemanalKm = 0;
 
   // Encontra data de referência mais recente nos cardios (ou hoje)
   let refCardioDate = new Date();
@@ -170,7 +191,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
     const d = parseBRDate(c.data);
     const isSameMonth = !d || (d.getMonth() === refCardioDate.getMonth() && d.getFullYear() === refCardioDate.getFullYear());
-    const isSameWeek = !d || Math.abs(refCardioDate.getTime() - d.getTime()) <= 7 * 24 * 3600 * 1000;
+    const isSameWeek = !d || isSameWeekMondayToSunday(d, refCardioDate);
 
     if (isSameMonth) {
       mensalKmCardio += km;
@@ -188,8 +209,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
     const mod = (c.modalidade || '').toLowerCase();
     if (mod.includes('bike') || mod.includes('ciclismo')) {
       bikeKm += km;
+      if (isSameMonth) bikeMensalKm += km;
+      if (isSameWeek) bikeSemanalKm += km;
     } else {
       caminhadaKm += km;
+      if (isSameMonth) caminhadaMensalKm += km;
+      if (isSameWeek) caminhadaSemanalKm += km;
     }
   });
 
@@ -234,7 +259,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
     const d = parseBRDate(w.data);
     const isSameMonth = !d || (d.getMonth() === refWorkoutDate.getMonth() && d.getFullYear() === refWorkoutDate.getFullYear());
-    const isSameWeek = !d || Math.abs(refWorkoutDate.getTime() - d.getTime()) <= 7 * 24 * 3600 * 1000;
+    const isSameWeek = !d || isSameWeekMondayToSunday(d, refWorkoutDate);
 
     if (isSameMonth) {
       mensalMinWorkout += mins;
@@ -342,7 +367,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
             <div className="bg-slate-900/70 border border-slate-700/60 px-3 py-1.5 rounded-xl flex items-center gap-2">
               <span className="text-slate-400">Altura:</span>
-              <strong className="text-white font-semibold">{formatBRNumber(profile.alturaMetros, 2)} m</strong>
+              <strong className="text-white font-semibold">{formatBRNumber(userAltura, 2)} m</strong>
             </div>
 
             <div className="bg-slate-900/70 border border-slate-700/60 px-3 py-1.5 rounded-xl flex items-center gap-2">
@@ -762,7 +787,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <span className="w-2.5 h-2.5 rounded-full bg-sky-400"></span>
               <div>
                 <span className="text-xs font-bold text-sky-300 block">Caminhada a Pé</span>
-                <span className="text-[11px] text-slate-400">Total: {formatBRNumber(caminhadaKm, 2)} km • Mês: {formatBRNumber(caminhadaKm, 2)} km • Semana: {formatBRNumber(caminhadaKm, 2)} km</span>
+                <span className="text-[11px] text-slate-400">Total: {formatBRNumber(caminhadaKm, 2)} km • Mês: {formatBRNumber(caminhadaMensalKm, 2)} km • Sem: {formatBRNumber(caminhadaSemanalKm, 2)} km</span>
               </div>
             </div>
             <span className="text-base font-black text-sky-400 font-mono">{formatBRNumber(caminhadaKm, 2)} km</span>
@@ -773,7 +798,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <span className="w-2.5 h-2.5 rounded-full bg-indigo-400"></span>
               <div>
                 <span className="text-xs font-bold text-indigo-300 block">Ciclismo / Bike</span>
-                <span className="text-[11px] text-slate-400">Total: {formatBRNumber(bikeKm, 2)} km • Mês: {formatBRNumber(bikeKm, 2)} km • Semana: {formatBRNumber(bikeKm, 2)} km</span>
+                <span className="text-[11px] text-slate-400">Total: {formatBRNumber(bikeKm, 2)} km • Mês: {formatBRNumber(bikeMensalKm, 2)} km • Sem: {formatBRNumber(bikeSemanalKm, 2)} km</span>
               </div>
             </div>
             <span className="text-base font-black text-slate-300 font-mono">{formatBRNumber(bikeKm, 2)} km</span>

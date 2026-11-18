@@ -554,7 +554,7 @@ export const WeightForm: React.FC<WeightFormProps> = ({
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-slate-400">IMC (Ref. 1,80m):</span>
+                <span className="text-slate-400">IMC (Ref. {formatBRNumber(profile.alturaMetros || 1.76, 2)}m):</span>
                 <span className="font-bold text-white">{liveIMC?.imc ? formatBRNumber(liveIMC.imc, 2) : '-'} ({liveIMC?.classificacao || '-'})</span>
               </div>
               <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800 text-[11px]">

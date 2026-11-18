@@ -38,7 +38,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
     const updatedProfile: UserProfile = {
       ...profile,
-      alturaMetros: isNaN(parsedAltura) ? 1.80 : parsedAltura,
+      alturaMetros: isNaN(parsedAltura) ? 1.76 : parsedAltura,
       pesoInicial: isNaN(parsedPesoInicial) ? 113.250 : parsedPesoInicial,
     };
 
@@ -168,7 +168,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   type="text"
                   value={altura}
                   onChange={(e) => setAltura(e.target.value)}
-                  placeholder="1.80"
+                  placeholder="1.76"
                   className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm"
                 />
               </div>

@@ -3,7 +3,7 @@ import { cleanDurationString } from '../utils/formatters';
 
 export const INITIAL_USER_PROFILE: UserProfile = {
   nome: 'Usuário',
-  alturaMetros: 1.80,
+  alturaMetros: 1.76,
   alturaAppCm: 176,
   pesoInicial: 113.250,
   dataInicio: '16/11/2026',
@@ -275,7 +275,12 @@ export function getStoredProfile(): UserProfile {
       saveStoredProfile(INITIAL_USER_PROFILE);
       return INITIAL_USER_PROFILE;
     }
-    return JSON.parse(raw);
+    const parsed: UserProfile = JSON.parse(raw);
+    if (parsed.alturaMetros === 1.80 || parsed.alturaMetros === 1.8) {
+      parsed.alturaMetros = 1.76;
+      saveStoredProfile(parsed);
+    }
+    return parsed;
   } catch {
     return INITIAL_USER_PROFILE;
   }

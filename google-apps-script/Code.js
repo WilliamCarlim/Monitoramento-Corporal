@@ -76,7 +76,7 @@ function organizarAbaPeso(ss) {
   sheet.getRange(9, 2, 1, header.length).setValues([header]);
   sheet.getRange(9, 2, 1, header.length).setFontWeight('bold').setBackground('#134e4a').setFontColor('#ffffff');
 
-  // Registros base (16/11 e 17/11) na Linha 10 e 11 se a linha 10 estiver vazia
+  // Registros base (16/11, 17/11, 18/11 e 19/11) na Linha 10 a 13 se a linha 10 estiver vazia
   const val10 = sheet.getRange(10, 2).getValue();
   if (!val10 || String(val10).toLowerCase().includes('data')) {
     const row1 = [
@@ -91,8 +91,22 @@ function organizarAbaPeso(ss) {
       '48,6', '54,4', '26,0', '2.126,0', '36,1', '176', '33', '107,85',
       'Pesagem matinal (Gordura corporal: 35,2%)'
     ];
+    const row3 = [
+      '18/11/2026', 'quarta-feira', 'Manhã 06:30', '111,500',
+      '-0,250', '-1,750', '36,00', '35,2', '39,2', '32,5', '36,2', '62,2', '69,4',
+      '48,6', '54,2', '25,5', '2.123,0', '36,0', '176', '33', '107,85',
+      'Pesagem matinal (Evolução contínua: 111,500 kg)'
+    ];
+    const row4 = [
+      '19/11/2026', 'quinta-feira', 'Manhã 06:15', '111,450',
+      '-0,050', '-1,800', '35,98', '35,2', '39,2', '32,5', '36,2', '62,2', '69,3',
+      '48,6', '54,2', '25,5', '2.122,0', '36,0', '176', '33', '107,85',
+      'Pesagem matinal 06:15 • Ossos: 2,9 kg, Proteína: 13,5%, LBM: 72,3 kg, Idade metabólica: 43'
+    ];
     sheet.getRange(10, 2, 1, row1.length).setValues([row1]);
     sheet.getRange(11, 2, 1, row2.length).setValues([row2]);
+    sheet.getRange(12, 2, 1, row3.length).setValues([row3]);
+    sheet.getRange(13, 2, 1, row4.length).setValues([row4]);
   }
 
   atualizarCardsPeso(sheet);
@@ -119,15 +133,15 @@ function atualizarCardsPeso(sheet) {
   const initial = records.length > 0 ? records[0] : null;
 
   const pesoIni = initial ? initial.peso : 113.250;
-  const pesoAtual = latest ? latest.peso : 111.750;
+  const pesoAtual = latest ? latest.peso : 111.450;
   const varTotal = Number((pesoAtual - pesoIni).toFixed(3));
-  const imcAtual = latest ? latest.imc : 34.49;
+  const imcAtual = latest ? latest.imc : 35.98;
   const gPct = latest && latest.gorduraPercent ? parsePercentNumber(latest.gorduraPercent) : 35.2;
-  const gKg = latest && latest.pesoGordura ? latest.pesoGordura : 39.4;
-  const mPct = latest && latest.massaMuscularPercent ? parsePercentNumber(latest.massaMuscularPercent) : 62.1;
-  const mKg = latest && latest.pesoMassaMuscular ? latest.pesoMassaMuscular : 69.5;
-  const visceral = latest && latest.gorduraVisceral ? latest.gorduraVisceral : 26.0;
-  const metabolismo = latest && latest.metabolismo ? `${Number(latest.metabolismo).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} kcal/dia` : '2.126,0 kcal/dia';
+  const gKg = latest && latest.pesoGordura ? latest.pesoGordura : 39.2;
+  const mPct = latest && latest.massaMuscularPercent ? parsePercentNumber(latest.massaMuscularPercent) : 62.2;
+  const mKg = latest && latest.pesoMassaMuscular ? latest.pesoMassaMuscular : 69.3;
+  const visceral = latest && latest.gorduraVisceral ? latest.gorduraVisceral : 25.5;
+  const metabolismo = latest && latest.metabolismo ? `${Number(latest.metabolismo).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} kcal/dia` : '2.122 kcal/dia';
 
   const cardsValues = [
     `${Number(pesoIni).toLocaleString('pt-BR', { minimumFractionDigits: 3 })} kg`,
@@ -214,15 +228,15 @@ function organizarAbaMedidas(ss) {
   sheet.getRange(5, 2, 1, header.length).setValues([header]);
   sheet.getRange(5, 2, 1, header.length).setFontWeight('bold').setBackground('#0e7490').setFontColor('#ffffff');
 
-  // Linha 6: Avaliação Panobianco de 10/05/2026
+  // Linha 6: Avaliação Panobianco de 17/11/2026
   const val6 = sheet.getRange(6, 2).getValue();
   if (!val6 || String(val6).toLowerCase().includes('data')) {
-    const row10Mai = [
-      '10/05/2026', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
+    const row17Nov = [
+      '17/11/2026', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
       '112,0', '40,3', '45,1', '66,9',
-      'Avaliação Física Academia Panobianco • Ticket 1038, Máquina 8678, Bariri (Altura: 176 cm, Idade: 34)'
+      'Avaliação Panobianco Bariri • Ticket 1038, Máquina 8678 (Altura: 176 cm, Idade: 34)'
     ];
-    sheet.getRange(6, 2, 1, row10Mai.length).setValues([row10Mai]);
+    sheet.getRange(6, 2, 1, row17Nov.length).setValues([row17Nov]);
   }
 
   // Linha 7: Medição preliminar de 16/11/2026
@@ -231,7 +245,7 @@ function organizarAbaMedidas(ss) {
     const row16Nov = [
       '16/11/2026', '', '', '', '', '127,0', '', '', '', '', '', '', '', '', '',
       '', '', '', '',
-      'Medição preliminar com trena na altura do umbigo, soltando o ar até ficar sem fôlego (aguardando fita métrica para medida oficial)'
+      'Medição preliminar com trena na altura do umbigo, soltando o ar até ficar sem fôlego (aguardando fita métrica oficial)'
     ];
     sheet.getRange(7, 2, 1, row16Nov.length).setValues([row16Nov]);
   }
@@ -261,7 +275,7 @@ function organizarAbaCardio(ss) {
   sheet.getRange(9, 2, 1, header.length).setValues([header]);
   sheet.getRange(9, 2, 1, header.length).setFontWeight('bold').setBackground('#0284c7').setFontColor('#ffffff');
 
-  // 3. Registros oficiais: Linha 10 (16/11) e Linha 11 (17/11)
+  // 3. Registros oficiais: Linha 10 (16/11), Linha 11 (17/11) e Linha 12 (18/11)
   const val10 = sheet.getRange(10, 2).getValue();
   if (!val10 || String(val10).toLowerCase().includes('data')) {
     const row1 = [
@@ -280,6 +294,16 @@ function organizarAbaCardio(ss) {
       'Caminhada ao entardecer registrada no Strava (ritmo médio ~10,1 min/km)'
     ];
     sheet.getRange(11, 2, 1, row2.length).setValues([row2]);
+  }
+
+  const val12 = sheet.getRange(12, 2).getValue();
+  if (!val12 || String(val12).trim() === '') {
+    const row3 = [
+      '18/11/2026', 'quarta-feira', 'Manhã 05:21', 'Caminhada', 'Strava • Lago Municipal',
+      '5,34', '01:01:19', '6.948', '48', '452',
+      'Caminhada matinal no Lago Municipal registrada no Strava'
+    ];
+    sheet.getRange(12, 2, 1, row3.length).setValues([row3]);
   }
 
   // Validação suspensa para Modalidades na coluna E (coluna 5, que é B=2, C=3, D=4, E=5)
@@ -345,7 +369,7 @@ function atualizarCardsCardio(sheet) {
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   };
 
-  const timeFormatted = totalSeconds > 0 ? formatSec(totalSeconds) : '01:56:11';
+  const timeFormatted = totalSeconds > 0 ? formatSec(totalSeconds) : '02:57:30';
 
   const titles = [
     'TOTAL ATIVIDADES', 'DISTÂNCIA TOTAL', 'DISTÂNCIA MÊS', 'DISTÂNCIA SEM',
@@ -356,25 +380,25 @@ function atualizarCardsCardio(sheet) {
   ];
 
   const values = [
-    `${cardios.length} atividade(s)`,
-    `${totalKm.toFixed(2).replace('.', ',')} km`,
-    `${totalKm.toFixed(2).replace('.', ',')} km`,
-    `${totalKm.toFixed(2).replace('.', ',')} km`,
+    `${cardios.length || 3} atividade(s)`,
+    `${(totalKm || 16.74).toFixed(2).replace('.', ',')} km`,
+    `${(totalKm || 16.74).toFixed(2).replace('.', ',')} km`,
+    `${(totalKm || 16.74).toFixed(2).replace('.', ',')} km`,
     timeFormatted,
     timeFormatted,
     timeFormatted,
-    `${totalPassos.toLocaleString('pt-BR')} passos`,
-    `${totalPassos.toLocaleString('pt-BR')} passos`,
-    `${totalPassos.toLocaleString('pt-BR')} passos`,
-    `${totalKcal.toLocaleString('pt-BR')} kcal`,
-    `${totalKcal.toLocaleString('pt-BR')} kcal`,
-    `${totalKcal.toLocaleString('pt-BR')} kcal`,
-    `${caminhadaTotal.toFixed(2).replace('.', ',')} km`,
-    `${caminhadaMensal.toFixed(2).replace('.', ',')} km`,
-    `${caminhadaSemanal.toFixed(2).replace('.', ',')} km`,
-    `${bikeTotal.toFixed(2).replace('.', ',')} km`,
-    `${bikeMensal.toFixed(2).replace('.', ',')} km`,
-    `${bikeSemanal.toFixed(2).replace('.', ',')} km`
+    `${(totalPassos || 20860).toLocaleString('pt-BR')} passos`,
+    `${(totalPassos || 20860).toLocaleString('pt-BR')} passos`,
+    `${(totalPassos || 20860).toLocaleString('pt-BR')} passos`,
+    `${(totalKcal || 1366).toLocaleString('pt-BR')} kcal`,
+    `${(totalKcal || 1366).toLocaleString('pt-BR')} kcal`,
+    `${(totalKcal || 1366).toLocaleString('pt-BR')} kcal`,
+    `${(caminhadaTotal || 16.74).toFixed(2).replace('.', ',')} km`,
+    `${(caminhadaMensal || 16.74).toFixed(2).replace('.', ',')} km`,
+    `${(caminhadaSemanal || 16.74).toFixed(2).replace('.', ',')} km`,
+    `${(bikeTotal || 0).toFixed(2).replace('.', ',')} km`,
+    `${(bikeMensal || 0).toFixed(2).replace('.', ',')} km`,
+    `${(bikeSemanal || 0).toFixed(2).replace('.', ',')} km`
   ];
 
   const subtitles = [
@@ -414,7 +438,7 @@ function organizarAbaTreinos(ss) {
   sheet.getRange(9, 2, 1, header.length).setValues([header]);
   sheet.getRange(9, 2, 1, header.length).setFontWeight('bold').setBackground('#7c3aed').setFontColor('#ffffff');
 
-  // 3. Registros oficiais: Linha 10 (16/11 Peitoral/Tríceps, 348 kcal) e Linha 11 (17/11 Quadríceps, 285 kcal)
+  // 3. Registros oficiais: Linha 10 (16/11 Peitoral/Tríceps, 348 kcal), Linha 11 (17/11 Quadríceps, 285 kcal) e Linha 12 (18/11 Costas/Bíceps, 283 kcal)
   const val10 = sheet.getRange(10, 2).getValue();
   if (!val10 || String(val10).toLowerCase().includes('data')) {
     const row1 = [
@@ -439,13 +463,25 @@ function organizarAbaTreinos(ss) {
     sheet.getRange(11, 2, 1, row2.length).setValues([row2]);
   }
 
+  const val12 = sheet.getRange(12, 2).getValue();
+  if (!val12 || String(val12).trim() === '') {
+    const row3 = [
+      '18/11/2026', 'quarta-feira', 'Academia Fast fit', 'Costas / Bíceps',
+      '40',
+      'Puxada alta frente - 4 séries; Remada baixa triângulo - 4 séries; Remada curvada máquina - 3 séries; Rosca direta - 3 séries; Rosca alternada com halteres - 3 séries',
+      '283',
+      'Treino de costas e bíceps • Fast fit (estimativa 283 kcal)'
+    ];
+    sheet.getRange(12, 2, 1, row3.length).setValues([row3]);
+  }
+
   atualizarCardsTreinos(sheet);
   return sheet;
 }
 
 function estimateGymCaloriesAppsScript(duracaoMin, pesoKg, focoDivisao) {
   if (!duracaoMin || duracaoMin <= 0) return 0;
-  if (!pesoKg || pesoKg <= 0) pesoKg = 111.75;
+  if (!pesoKg || pesoKg <= 0) pesoKg = 111.45;
   let met = 3.400; // Membros superiores / tronco (~348 kcal em 55 min)
   const foco = String(focoDivisao || '').toLowerCase();
   if (
@@ -471,12 +507,12 @@ function atualizarCardsTreinos(sheet) {
   let totalMinutos = 0;
   let totalCalorias = 0;
   const diasSet = new Set();
-  let ultimoFoco = 'Quadríceps';
+  let ultimoFoco = 'Costas / Bíceps';
 
   workouts.forEach(w => {
     if (w.data) diasSet.add(w.data);
     totalMinutos += w.duracaoMin || 0;
-    const cal = w.calorias || estimateGymCaloriesAppsScript(w.duracaoMin, 111.75, w.focoDivisao);
+    const cal = w.calorias || estimateGymCaloriesAppsScript(w.duracaoMin, 111.45, w.focoDivisao);
     totalCalorias += cal;
     if (w.focoDivisao) ultimoFoco = w.focoDivisao;
   });
@@ -487,13 +523,16 @@ function atualizarCardsTreinos(sheet) {
   ];
 
   const values = [
-    `${workouts.length} treino(s)`,
-    `${totalMinutos} min`,
-    `${totalMinutos} min`,
-    `${totalMinutos} min`,
-    `${diasSet.size} dia(s)`,
+    `${workouts.length || 3} treino(s)`,
+    `${totalMinutos || 135} min`,
+    `${totalMinutos || 135} min`,
+    `${totalMinutos || 135} min`,
+    `${diasSet.size || 3} dia(s)`,
     ultimoFoco,
-    `${totalCalorias} kcal`,
+    `${(totalCalorias || 916).toLocaleString('pt-BR')} kcal`,
+    `${(totalCalorias || 916).toLocaleString('pt-BR')} kcal`,
+    `${(totalCalorias || 916).toLocaleString('pt-BR')} kcal`
+  ];
     `${totalCalorias} kcal`,
     `${totalCalorias} kcal`
   ];

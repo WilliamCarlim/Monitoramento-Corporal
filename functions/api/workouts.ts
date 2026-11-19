@@ -23,6 +23,17 @@ const BASELINE_WORKOUTS = [
     calorias: 285,
     observacoes: 'Treino de pernas / quadríceps executado • Fast fit • 11:59',
   },
+  {
+    id: 't-3',
+    data: '18/11/2026',
+    diaSemana: 'quarta-feira',
+    contexto: 'Fast fit',
+    focoDivisao: 'Costas / Bíceps',
+    duracaoMin: 40,
+    exerciciosCargas: 'Puxada alta frente - 4 séries; Remada baixa triângulo - 4 séries; Remada curvada máquina - 3 séries; Rosca direta - 3 séries; Rosca alternada com halteres - 3 séries',
+    calorias: 283,
+    observacoes: 'Treino de costas e bíceps • Fast fit (estimativa 283 kcal)',
+  },
 ];
 
 export const onRequestGet: PagesFunction<Env> = async (context) => {

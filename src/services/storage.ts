@@ -61,17 +61,67 @@ export const INITIAL_WEIGHT_RECORDS: WeightRecord[] = [
     melhorPeso30d: 107.85,
     observacoes: 'Pesagem matinal (Gordura corporal: 35,2%)',
   },
+  {
+    id: 'w-3',
+    data: '18/11/2026',
+    diaSemana: 'quarta-feira',
+    contexto: 'Manhã 06:30',
+    peso: 111.500,
+    variacaoAnterior: -0.250,
+    variacaoInicial: -1.750,
+    imc: 36.00,
+    gorduraPercent: 35.2,
+    pesoGordura: 39.2,
+    massaMuscEsqPercent: 32.5,
+    pesoMassaMuscEsq: 36.2,
+    massaMuscularPercent: 62.2,
+    pesoMassaMuscular: 69.4,
+    aguaPercent: 48.6,
+    pesoAgua: 54.2,
+    gorduraVisceral: 25.5,
+    metabolismo: 2123.0,
+    imcApp: 36.0,
+    alturaApp: 176,
+    idadeApp: 33,
+    melhorPeso30d: 107.85,
+    observacoes: 'Pesagem matinal (Evolução contínua: 111,500 kg)',
+  },
+  {
+    id: 'w-4',
+    data: '19/11/2026',
+    diaSemana: 'quinta-feira',
+    contexto: 'Manhã 06:15',
+    peso: 111.450,
+    variacaoAnterior: -0.050,
+    variacaoInicial: -1.800,
+    imc: 35.98,
+    gorduraPercent: 35.2,
+    pesoGordura: 39.2,
+    massaMuscEsqPercent: 32.5,
+    pesoMassaMuscEsq: 36.2,
+    massaMuscularPercent: 62.2,
+    pesoMassaMuscular: 69.3,
+    aguaPercent: 48.6,
+    pesoAgua: 54.2,
+    gorduraVisceral: 25.5,
+    metabolismo: 2122.0,
+    imcApp: 36.0,
+    alturaApp: 176,
+    idadeApp: 33,
+    melhorPeso30d: 107.85,
+    observacoes: 'Pesagem matinal 06:15 • Ossos: 2,9 kg, Proteína: 13,5%, LBM: 72,3 kg, Idade metabólica: 43',
+  },
 ];
 
 export const INITIAL_MEASURE_RECORDS: MeasureRecord[] = [
   {
     id: 'm-0',
-    data: '10/05/2026',
+    data: '17/11/2026',
     pesoAvaliacao: 112.0,
     gorduraAvaliacao: 40.3,
     massaGordura: 45.1,
     massaSemGordura: 66.9,
-    observacoes: 'Avaliação Física Academia Panobianco • Ticket 1038, Máquina 8678, Bariri (Altura: 176 cm, Idade: 34)',
+    observacoes: 'Avaliação Panobianco Bariri • Ticket 1038, Máquina 8678 (Altura: 176 cm, Idade: 34)',
   },
   {
     id: 'm-1',
@@ -110,6 +160,20 @@ export const INITIAL_CARDIO_RECORDS: CardioRecord[] = [
     calorias: 444,
     observacoes: 'Caminhada ao entardecer registrada no Strava (ritmo médio ~10,1 min/km)',
   },
+  {
+    id: 'c-3',
+    data: '18/11/2026',
+    diaSemana: 'quarta-feira',
+    contexto: 'Manhã 05:21',
+    modalidade: 'Caminhada',
+    local: 'Strava • Lago Municipal',
+    distanciaKm: 5.34,
+    tempoMovimento: '01:01:19',
+    passos: 6948,
+    elevacaoM: 48,
+    calorias: 452,
+    observacoes: 'Caminhada matinal no Lago Municipal registrada no Strava',
+  },
 ];
 
 export const INITIAL_WORKOUT_RECORDS: WorkoutRecord[] = [
@@ -135,6 +199,17 @@ export const INITIAL_WORKOUT_RECORDS: WorkoutRecord[] = [
     calorias: 285,
     observacoes: 'Treino de pernas / quadríceps executado • Fast fit • 11:59',
   },
+  {
+    id: 't-3',
+    data: '18/11/2026',
+    diaSemana: 'quarta-feira',
+    contexto: 'Fast fit',
+    focoDivisao: 'Costas / Bíceps',
+    duracaoMin: 40,
+    exerciciosCargas: 'Puxada alta frente - 4 séries; Remada baixa triângulo - 4 séries; Remada curvada máquina - 3 séries; Rosca direta - 3 séries; Rosca alternada com halteres - 3 séries',
+    calorias: 283,
+    observacoes: 'Treino de costas e bíceps • Fast fit (estimativa 283 kcal)',
+  },
 ];
 
 export const INITIAL_PHOTO_RECORDS: PhotoRecord[] = [
@@ -150,12 +225,12 @@ export const INITIAL_PHOTO_RECORDS: PhotoRecord[] = [
 ];
 
 const STORAGE_KEYS = {
-  WEIGHTS: 'mc_weight_records_v6',
-  MEASURES: 'mc_measure_records_v6',
-  CARDIOS: 'mc_cardio_records_v6',
-  WORKOUTS: 'mc_workout_records_v6',
-  PHOTOS: 'mc_photo_records_v6',
-  PROFILE: 'mc_user_profile_v6',
+  WEIGHTS: 'mc_weight_records_v7',
+  MEASURES: 'mc_measure_records_v7',
+  CARDIOS: 'mc_cardio_records_v7',
+  WORKOUTS: 'mc_workout_records_v7',
+  PHOTOS: 'mc_photo_records_v7',
+  PROFILE: 'mc_user_profile_v7',
   API_CONFIG: 'mc_api_config_v6',
 };
 
@@ -163,6 +238,20 @@ export function getStoredWeights(): WeightRecord[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.WEIGHTS);
     if (!raw) {
+      const oldRaw = localStorage.getItem('mc_weight_records_v6');
+      if (oldRaw) {
+        try {
+          const oldList: WeightRecord[] = JSON.parse(oldRaw);
+          const merged = [...oldList];
+          INITIAL_WEIGHT_RECORDS.forEach(init => {
+            if (!merged.some(m => m.data === init.data || m.id === init.id)) {
+              merged.push(init);
+            }
+          });
+          saveStoredWeights(merged);
+          return merged;
+        } catch {}
+      }
       saveStoredWeights(INITIAL_WEIGHT_RECORDS);
       return INITIAL_WEIGHT_RECORDS;
     }
@@ -184,6 +273,20 @@ export function getStoredMeasures(): MeasureRecord[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.MEASURES);
     if (!raw) {
+      const oldRaw = localStorage.getItem('mc_measure_records_v6');
+      if (oldRaw) {
+        try {
+          const oldList: MeasureRecord[] = JSON.parse(oldRaw);
+          const merged = [...oldList];
+          INITIAL_MEASURE_RECORDS.forEach(init => {
+            if (!merged.some(m => m.data === init.data || m.id === init.id)) {
+              merged.push(init);
+            }
+          });
+          saveStoredMeasures(merged);
+          return merged;
+        } catch {}
+      }
       saveStoredMeasures(INITIAL_MEASURE_RECORDS);
       return INITIAL_MEASURE_RECORDS;
     }
@@ -203,12 +306,29 @@ export function saveStoredMeasures(records: MeasureRecord[]): void {
 
 export function getStoredCardios(): CardioRecord[] {
   try {
+    let list: CardioRecord[] = [];
     const raw = localStorage.getItem(STORAGE_KEYS.CARDIOS);
     if (!raw) {
-      saveStoredCardios(INITIAL_CARDIO_RECORDS);
-      return INITIAL_CARDIO_RECORDS;
+      const oldRaw = localStorage.getItem('mc_cardio_records_v6');
+      if (oldRaw) {
+        try {
+          const oldList: CardioRecord[] = JSON.parse(oldRaw);
+          const merged = [...oldList];
+          INITIAL_CARDIO_RECORDS.forEach(init => {
+            if (!merged.some(m => m.data === init.data || m.id === init.id)) {
+              merged.push(init);
+            }
+          });
+          list = merged;
+        } catch {}
+      }
+      if (list.length === 0) {
+        list = INITIAL_CARDIO_RECORDS;
+      }
+      saveStoredCardios(list);
+    } else {
+      list = JSON.parse(raw);
     }
-    const list: CardioRecord[] = JSON.parse(raw);
     return list.map((c) => ({
       ...c,
       tempoMovimento: cleanDurationString(c.tempoMovimento),
@@ -228,12 +348,30 @@ export function saveStoredCardios(records: CardioRecord[]): void {
 
 export function getStoredWorkouts(): WorkoutRecord[] {
   try {
+    let list: WorkoutRecord[] = [];
     const raw = localStorage.getItem(STORAGE_KEYS.WORKOUTS);
     if (!raw) {
-      saveStoredWorkouts(INITIAL_WORKOUT_RECORDS);
-      return INITIAL_WORKOUT_RECORDS;
+      const oldRaw = localStorage.getItem('mc_workout_records_v6');
+      if (oldRaw) {
+        try {
+          const oldList: WorkoutRecord[] = JSON.parse(oldRaw);
+          const merged = [...oldList];
+          INITIAL_WORKOUT_RECORDS.forEach(init => {
+            if (!merged.some(m => m.data === init.data || m.id === init.id)) {
+              merged.push(init);
+            }
+          });
+          list = merged;
+        } catch {}
+      }
+      if (list.length === 0) {
+        list = INITIAL_WORKOUT_RECORDS;
+      }
+      saveStoredWorkouts(list);
+    } else {
+      list = JSON.parse(raw);
     }
-    return JSON.parse(raw);
+    return list;
   } catch {
     return INITIAL_WORKOUT_RECORDS;
   }
@@ -270,7 +408,10 @@ export function saveStoredPhotos(records: PhotoRecord[]): void {
 
 export function getStoredProfile(): UserProfile {
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.PROFILE);
+    let raw = localStorage.getItem(STORAGE_KEYS.PROFILE);
+    if (!raw) {
+      raw = localStorage.getItem('mc_user_profile_v6');
+    }
     if (!raw) {
       saveStoredProfile(INITIAL_USER_PROFILE);
       return INITIAL_USER_PROFILE;
@@ -278,8 +419,11 @@ export function getStoredProfile(): UserProfile {
     const parsed: UserProfile = JSON.parse(raw);
     if (parsed.alturaMetros === 1.80 || parsed.alturaMetros === 1.8) {
       parsed.alturaMetros = 1.76;
-      saveStoredProfile(parsed);
     }
+    if (parsed.alturaAppCm === 180) {
+      parsed.alturaAppCm = 176;
+    }
+    saveStoredProfile(parsed);
     return parsed;
   } catch {
     return INITIAL_USER_PROFILE;

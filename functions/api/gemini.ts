@@ -23,7 +23,7 @@ Por favor, adicione na tela de Configurações (⚙️) do site ou nas variávei
     );
   }
 
-  const profile = appContext.profile || { alturaMetros: 1.80, alturaAppCm: 176, pesoInicial: 113.250, dataInicio: '16/11/2026', idade: 33 };
+  const profile = appContext.profile || { alturaMetros: 1.76, alturaAppCm: 176, pesoInicial: 113.250, dataInicio: '16/11/2026', idade: 33 };
   const weights = appContext.weightsRecent || [];
   const measures = appContext.measuresRecent || [];
   const cardios = appContext.cardiosRecent || [];

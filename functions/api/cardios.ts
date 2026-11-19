@@ -29,6 +29,20 @@ const BASELINE_CARDIOS = [
     calorias: 444,
     observacoes: 'Caminhada ao entardecer registrada no Strava (ritmo médio ~10,1 min/km)',
   },
+  {
+    id: 'c-3',
+    data: '18/11/2026',
+    diaSemana: 'quarta-feira',
+    contexto: 'Manhã 05:21',
+    modalidade: 'Caminhada',
+    local: 'Strava • Lago Municipal',
+    distanciaKm: 5.34,
+    tempoMovimento: '01:01:19',
+    passos: 6948,
+    elevacaoM: 48,
+    calorias: 452,
+    observacoes: 'Caminhada matinal no Lago Municipal registrada no Strava',
+  },
 ];
 
 function cleanDuration(val: any): string {

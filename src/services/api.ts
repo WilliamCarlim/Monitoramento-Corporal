@@ -757,7 +757,7 @@ export async function askGemini(
   // Fallback analytical message
   const lastWeight = weights[weights.length - 1];
   const initialWeight = profile.pesoInicial || 113.250;
-  const diffTotal = lastWeight ? (lastWeight.peso - initialWeight).toFixed(3) : '-1.500';
+  const diffTotal = lastWeight ? (lastWeight.peso - initialWeight).toFixed(3) : '-1.800';
 
   return {
     text: `### 📊 Análise Geral do Assistente (Modo Integrado)
@@ -765,12 +765,12 @@ export async function askGemini(
 Olá! Aqui está o resumo das suas métricas consolidadas das **5 abas da planilha**:
 
 * **Peso Inicial:** ${initialWeight} kg (16/11/2026)
-* **Peso Atual:** ${lastWeight?.peso || 111.750} kg (Variação: ${Number(diffTotal) > 0 ? `+${diffTotal}` : diffTotal} kg)
-* **Composição Corporal:** Gordura: ${lastWeight?.gorduraPercent || 35.2}% (${lastWeight?.pesoGordura || 39.4} kg) | Massa Muscular: ${lastWeight?.massaMuscularPercent || 62.1}% (${lastWeight?.pesoMassaMuscular || 69.5} kg)
-* **Gordura Visceral:** ${lastWeight?.gorduraVisceral || 26.0} | **Taxa Basal:** ${lastWeight?.metabolismo || 2126.0} kcal/dia
+* **Peso Atual:** ${lastWeight?.peso || 111.450} kg (Variação: ${Number(diffTotal) > 0 ? `+${diffTotal}` : diffTotal} kg)
+* **Composição Corporal:** Gordura: ${lastWeight?.gorduraPercent || 35.2}% (${lastWeight?.pesoGordura || 39.2} kg) | Massa Muscular: ${lastWeight?.massaMuscularPercent || 62.2}% (${lastWeight?.pesoMassaMuscular || 69.3} kg)
+* **Gordura Visceral:** ${lastWeight?.gorduraVisceral || 25.5} | **Taxa Basal:** ${lastWeight?.metabolismo || 2122.0} kcal/dia
 * **Medida Abdominal Atual:** ${measures[measures.length - 1]?.abdomen || 127} cm
-* **Cardio:** ${cardios.length} atividade(s) aeróbica(s) registrada(s) (última: ${cardios[cardios.length - 1]?.modalidade || 'Caminhada'} de ${cardios[cardios.length - 1]?.distanciaKm || 5.7} km)
-* **Musculação:** ${workouts.length} treino(s) na academia (último foco: ${workouts[workouts.length - 1]?.focoDivisao || 'Peitoral / Tríceps'})
+* **Cardio:** ${cardios.length} atividade(s) aeróbica(s) registrada(s) (última: ${cardios[cardios.length - 1]?.modalidade || 'Caminhada'} de ${cardios[cardios.length - 1]?.distanciaKm || 5.34} km)
+* **Musculação:** ${workouts.length} treino(s) na academia (último foco: ${workouts[workouts.length - 1]?.focoDivisao || 'Costas / Bíceps'})
 * **Fotos Semanais:** ${photos.length} registro(s)
 
 💡 **Destaque:** Sua redução de peso (-1,500 kg) manteve a massa muscular elevada e estável (${lastWeight?.massaMuscularPercent || 62.1}%), comprovando excelente recuperação pós-treino e ótimo ritmo!`,

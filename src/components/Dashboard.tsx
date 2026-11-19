@@ -63,7 +63,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const latestWeight = weights.length > 0 ? weights[weights.length - 1] : null;
   const firstWeightRecord = weights.length > 0 ? weights[0] : null;
   const initialWeight = firstWeightRecord?.peso || profile.pesoInicial || 113.250;
-  const currentWeight = latestWeight ? latestWeight.peso : 111.750;
+  const currentWeight = latestWeight ? latestWeight.peso : 111.450;
   const currPeso = currentWeight;
 
   const userAltura = profile.alturaMetros && profile.alturaMetros !== 1.80 ? profile.alturaMetros : 1.76;
@@ -74,15 +74,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const rawGordura = latestWeight?.gorduraPercent ?? 35.2;
   const gorduraPercent = rawGordura > 0 && rawGordura <= 1.0 ? Math.round(rawGordura * 1000) / 10 : rawGordura;
   const currGordura = gorduraPercent;
-  const pesoGordura = latestWeight?.pesoGordura ?? 39.4;
+  const pesoGordura = latestWeight?.pesoGordura ?? 39.2;
 
-  const rawMassaMusc = latestWeight?.massaMuscularPercent ?? 62.1;
+  const rawMassaMusc = latestWeight?.massaMuscularPercent ?? 62.2;
   const massaMuscular = rawMassaMusc > 0 && rawMassaMusc <= 1.0 ? Math.round(rawMassaMusc * 1000) / 10 : rawMassaMusc;
   const currMassaMusc = massaMuscular;
-  const pesoMassaMusc = latestWeight?.pesoMassaMuscular ?? 69.5;
-  const gorduraVisceral = latestWeight?.gorduraVisceral ?? 26.0;
+  const pesoMassaMusc = latestWeight?.pesoMassaMuscular ?? 69.3;
+  const gorduraVisceral = latestWeight?.gorduraVisceral ?? 25.5;
   const currVisceral = gorduraVisceral;
-  const metabolismo = latestWeight?.metabolismo ?? 2126.0;
+  const metabolismo = latestWeight?.metabolismo ?? 2122.0;
   const currMetabolismo = metabolismo;
 
   // Métricas iniciais e variações completas para todos os 8 cards do painel
@@ -171,11 +171,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
   let bikeSemanalKm = 0;
 
   // Encontra data de referência mais recente nos cardios (ou hoje)
-  let refCardioDate = new Date();
-  cardios.forEach((c) => {
-    const d = parseBRDate(c.data);
-    if (d && d > refCardioDate) refCardioDate = d;
-  });
+  let refCardioDate: Date = new Date();
+  if (cardios.length > 0) {
+    let latestD: Date | null = null;
+    cardios.forEach((c) => {
+      const d = parseBRDate(c.data);
+      if (d && (!latestD || d > latestD)) latestD = d;
+    });
+    if (latestD) refCardioDate = latestD;
+  }
 
   cardios.forEach((c) => {
     const km = c.distanciaKm || 0;
@@ -225,7 +229,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   };
 
-  const formattedCardioTime = totalSecondsCardio > 0 ? formatSecsToHms(totalSecondsCardio) : '01:56:11';
+  const formattedCardioTime = totalSecondsCardio > 0 ? formatSecsToHms(totalSecondsCardio) : '02:57:30';
   const formattedCardioTimeMonth = mensalSecondsCardio > 0 ? formatSecsToHms(mensalSecondsCardio) : formattedCardioTime;
   const formattedCardioTimeWeek = semanalSecondsCardio > 0 ? formatSecsToHms(semanalSecondsCardio) : formattedCardioTime;
 
@@ -238,11 +242,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
   let semanalCaloriasWorkout = 0;
   const uniqueWorkoutDays = new Set<string>();
 
-  let refWorkoutDate = new Date();
-  workouts.forEach((w) => {
-    const d = parseBRDate(w.data);
-    if (d && d > refWorkoutDate) refWorkoutDate = d;
-  });
+  let refWorkoutDate: Date = new Date();
+  if (workouts.length > 0) {
+    let latestD: Date | null = null;
+    workouts.forEach((w) => {
+      const d = parseBRDate(w.data);
+      if (d && (!latestD || d > latestD)) latestD = d;
+    });
+    if (latestD) refWorkoutDate = latestD;
+  }
 
   workouts.forEach((w) => {
     const mins = w.duracaoMin || 0;
@@ -253,6 +261,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     if (!kcal) {
       if (w.data === '16/11/2026') kcal = 348;
       else if (w.data === '17/11/2026') kcal = 285;
+      else if (w.data === '18/11/2026') kcal = 283;
       else kcal = estimateGymCalories(w.duracaoMin || 55, currentWeight, 8, w.focoDivisao);
     }
     totalCaloriasWorkout += kcal;
@@ -271,7 +280,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   });
 
-  const lastWorkoutFocus = workouts.length > 0 ? workouts[workouts.length - 1].focoDivisao : 'Quadríceps';
+  const lastWorkoutFocus = workouts.length > 0 ? workouts[workouts.length - 1].focoDivisao : 'Costas / Bíceps';
 
   // Consolidação de Calorias Queimadas (Cardio + Musculação)
   const totalGeralKcal = totalCaloriasCardio + totalCaloriasWorkout;
@@ -513,7 +522,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   </div>
                 </div>
                 <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                  {latestWeight?.data || '17/11/2026'}
+                  {latestWeight?.data || '19/11/2026'}
                 </span>
               </div>
 
@@ -530,7 +539,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <span className="text-sm font-semibold text-emerald-400">kg</span>
                   </div>
                   <span className="text-xs text-slate-400 block mt-0.5">
-                    {latestWeight?.contexto || 'Manhã (06:41)'}
+                    {latestWeight?.contexto || 'Manhã (06:15)'}
                   </span>
                 </div>
 
@@ -602,7 +611,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <span className="text-lg font-bold text-cyan-300 block mt-0.5">{formatBRNumber(currMassaEsq, 1)}%</span>
                   </div>
                   <div className="mt-2 pt-1 border-t border-slate-700/50 flex items-center justify-between text-[11px]">
-                    <span className="text-slate-400">{latestWeight?.pesoMassaMuscEsq ? `${formatBRNumber(latestWeight.pesoMassaMuscEsq, 1)} kg` : '36,3 kg'}</span>
+                    <span className="text-slate-400">{latestWeight?.pesoMassaMuscEsq ? `${formatBRNumber(latestWeight.pesoMassaMuscEsq, 1)} kg` : '36,2 kg'}</span>
                     <span className="font-bold text-emerald-400 flex items-center gap-0.5">
                       {diffMassaEsq > 0 ? <TrendingUp className="w-3 h-3" /> : null}
                       {diffMassaEsq > 0 ? `+${formatBRNumber(diffMassaEsq, 1)}%` : `${formatBRNumber(diffMassaEsq, 1)}%`}
@@ -630,7 +639,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <span className="text-lg font-bold text-blue-300 block mt-0.5">{formatBRNumber(currAgua, 1)}%</span>
                   </div>
                   <div className="mt-2 pt-1 border-t border-slate-700/50 flex items-center justify-between text-[11px]">
-                    <span className="text-slate-400">{latestWeight?.pesoAgua ? `${formatBRNumber(latestWeight.pesoAgua, 1)} kg` : '54,4 kg'}</span>
+                    <span className="text-slate-400">{latestWeight?.pesoAgua ? `${formatBRNumber(latestWeight.pesoAgua, 1)} kg` : '54,2 kg'}</span>
                     <span className="font-bold text-emerald-400 flex items-center gap-0.5">
                       {diffAgua > 0 ? <TrendingUp className="w-3 h-3" /> : null}
                       {diffAgua > 0 ? `+${formatBRNumber(diffAgua, 1)}%` : `${formatBRNumber(diffAgua, 1)}%`}

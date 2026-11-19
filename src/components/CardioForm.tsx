@@ -44,7 +44,7 @@ export const CardioForm: React.FC<CardioFormProps> = ({
   onSubmit,
   onSuccess,
 }) => {
-  const currentWeightKg = latestWeight?.peso || 111.750;
+  const currentWeightKg = latestWeight?.peso || 111.450;
 
   const [data, setData] = useState<string>(getTodayBR());
   const [diaSemana, setDiaSemana] = useState<string>(getDayOfWeekBR());

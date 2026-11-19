@@ -533,9 +533,6 @@ function atualizarCardsTreinos(sheet) {
     `${(totalCalorias || 916).toLocaleString('pt-BR')} kcal`,
     `${(totalCalorias || 916).toLocaleString('pt-BR')} kcal`
   ];
-    `${totalCalorias} kcal`,
-    `${totalCalorias} kcal`
-  ];
 
   const subtitles = [
     'Sessões registradas', 'Duração acumulada', 'No mês corrente', 'Na semana corrente',

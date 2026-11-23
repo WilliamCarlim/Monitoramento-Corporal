@@ -170,16 +170,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   let bikeMensalKm = 0;
   let bikeSemanalKm = 0;
 
-  // Encontra data de referência mais recente nos cardios (ou hoje)
-  let refCardioDate: Date = new Date();
-  if (cardios.length > 0) {
-    let latestD: Date | null = null;
-    cardios.forEach((c) => {
-      const d = parseBRDate(c.data);
-      if (d && (!latestD || d > latestD)) latestD = d;
-    });
-    if (latestD) refCardioDate = latestD;
-  }
+  // Data atual de referência para filtros de Mês Corrente e Semana Corrente (Segunda a Domingo)
+  const today = new Date();
 
   cardios.forEach((c) => {
     const km = c.distanciaKm || 0;
@@ -194,8 +186,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
     totalSecondsCardio += secs;
 
     const d = parseBRDate(c.data);
-    const isSameMonth = !d || (d.getMonth() === refCardioDate.getMonth() && d.getFullYear() === refCardioDate.getFullYear());
-    const isSameWeek = !d || isSameWeekMondayToSunday(d, refCardioDate);
+    const isSameMonth = d ? (d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear()) : false;
+    const isSameWeek = d ? isSameWeekMondayToSunday(d, today) : false;
 
     if (isSameMonth) {
       mensalKmCardio += km;
@@ -229,9 +221,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   };
 
-  const formattedCardioTime = totalSecondsCardio > 0 ? formatSecsToHms(totalSecondsCardio) : '02:57:30';
-  const formattedCardioTimeMonth = mensalSecondsCardio > 0 ? formatSecsToHms(mensalSecondsCardio) : formattedCardioTime;
-  const formattedCardioTimeWeek = semanalSecondsCardio > 0 ? formatSecsToHms(semanalSecondsCardio) : formattedCardioTime;
+  const formattedCardioTime = totalSecondsCardio > 0 ? formatSecsToHms(totalSecondsCardio) : '00:00:00';
+  const formattedCardioTimeMonth = mensalSecondsCardio > 0 ? formatSecsToHms(mensalSecondsCardio) : '00:00:00';
+  const formattedCardioTimeWeek = semanalSecondsCardio > 0 ? formatSecsToHms(semanalSecondsCardio) : '00:00:00';
 
   // Musculação stats separados: Total, Mensal e Semanal
   let totalMinWorkout = 0;
@@ -241,16 +233,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   let mensalCaloriasWorkout = 0;
   let semanalCaloriasWorkout = 0;
   const uniqueWorkoutDays = new Set<string>();
-
-  let refWorkoutDate: Date = new Date();
-  if (workouts.length > 0) {
-    let latestD: Date | null = null;
-    workouts.forEach((w) => {
-      const d = parseBRDate(w.data);
-      if (d && (!latestD || d > latestD)) latestD = d;
-    });
-    if (latestD) refWorkoutDate = latestD;
-  }
 
   workouts.forEach((w) => {
     const mins = w.duracaoMin || 0;
@@ -267,8 +249,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
     totalCaloriasWorkout += kcal;
 
     const d = parseBRDate(w.data);
-    const isSameMonth = !d || (d.getMonth() === refWorkoutDate.getMonth() && d.getFullYear() === refWorkoutDate.getFullYear());
-    const isSameWeek = !d || isSameWeekMondayToSunday(d, refWorkoutDate);
+    const isSameMonth = d ? (d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear()) : false;
+    const isSameWeek = d ? isSameWeekMondayToSunday(d, today) : false;
 
     if (isSameMonth) {
       mensalMinWorkout += mins;
@@ -1005,7 +987,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <span className="text-sm font-bold text-rose-400/90">kcal</span>
               </div>
               <p className="text-[11px] text-slate-400 mt-1">
-                Queima nos últimos 7 dias
+                Semana corrente (segunda a domingo)
               </p>
             </div>
             <div className="pt-2 border-t border-slate-750 flex items-center justify-around text-[11px]">

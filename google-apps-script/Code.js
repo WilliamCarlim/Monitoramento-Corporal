@@ -319,28 +319,52 @@ function organizarAbaCardio(ss) {
   return sheet;
 }
 
+function isSameWeekMondayToSundayGAS(d1, d2) {
+  if (!d1 || !d2) return false;
+  function getMonday(d) {
+    const date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const day = date.getDay(); // 0 = Domingo, 1 = Segunda, ..., 6 = Sábado
+    const diff = day === 0 ? -6 : 1 - day;
+    date.setDate(date.getDate() + diff);
+    date.setHours(0, 0, 0, 0);
+    return date.getTime();
+  }
+  return getMonday(d1) === getMonday(d2);
+}
+
+function parseBRDateGAS(dStr) {
+  if (!dStr) return null;
+  if (dStr instanceof Date) return dStr;
+  const parts = String(dStr).trim().split('/');
+  if (parts.length !== 3) return null;
+  const d = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10) - 1;
+  const y = parseInt(parts[2], 10);
+  if (isNaN(d) || isNaN(m) || isNaN(y)) return null;
+  return new Date(y, m, d);
+}
+
 function atualizarCardsCardio(sheet) {
   sheet.getRange('A4:Z8').clear().clearFormat();
 
   const cardios = parseCardioSheet(sheet);
-  let totalKm = 0;
-  let totalPassos = 0;
-  let totalKcal = 0;
-  let totalSeconds = 0;
+  const today = new Date();
 
-  let caminhadaTotal = 0;
-  let caminhadaMensal = 0;
-  let caminhadaSemanal = 0;
+  let totalKm = 0, mensalKm = 0, semanalKm = 0;
+  let totalPassos = 0, mensalPassos = 0, semanalPassos = 0;
+  let totalKcal = 0, mensalKcal = 0, semanalKcal = 0;
+  let totalSeconds = 0, mensalSeconds = 0, semanalSeconds = 0;
 
-  let bikeTotal = 0;
-  let bikeMensal = 0;
-  let bikeSemanal = 0;
+  let caminhadaTotal = 0, caminhadaMensal = 0, caminhadaSemanal = 0;
+  let bikeTotal = 0, bikeMensal = 0, bikeSemanal = 0;
 
   cardios.forEach(c => {
     const km = c.distanciaKm || 0;
+    const passos = c.passos || 0;
+    const kcal = c.calorias || 0;
     totalKm += km;
-    totalPassos += c.passos || 0;
-    totalKcal += c.calorias || 0;
+    totalPassos += passos;
+    totalKcal += kcal;
 
     let sec = 0;
     if (c.tempoMovimento) {
@@ -350,15 +374,32 @@ function atualizarCardsCardio(sheet) {
     }
     totalSeconds += sec;
 
+    const d = parseBRDateGAS(c.data);
+    const isSameMonth = d && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+    const isSameWeek = d && isSameWeekMondayToSundayGAS(d, today);
+
+    if (isSameMonth) {
+      mensalKm += km;
+      mensalPassos += passos;
+      mensalKcal += kcal;
+      mensalSeconds += sec;
+    }
+    if (isSameWeek) {
+      semanalKm += km;
+      semanalPassos += passos;
+      semanalKcal += kcal;
+      semanalSeconds += sec;
+    }
+
     const mod = (c.modalidade || '').toLowerCase();
     if (mod.includes('caminh')) {
       caminhadaTotal += km;
-      caminhadaMensal += km;
-      caminhadaSemanal += km;
+      if (isSameMonth) caminhadaMensal += km;
+      if (isSameWeek) caminhadaSemanal += km;
     } else if (mod.includes('bike') || mod.includes('cicl')) {
       bikeTotal += km;
-      bikeMensal += km;
-      bikeSemanal += km;
+      if (isSameMonth) bikeMensal += km;
+      if (isSameWeek) bikeSemanal += km;
     }
   });
 
@@ -369,7 +410,9 @@ function atualizarCardsCardio(sheet) {
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   };
 
-  const timeFormatted = totalSeconds > 0 ? formatSec(totalSeconds) : '02:57:30';
+  const timeFormatted = totalSeconds > 0 ? formatSec(totalSeconds) : '00:00:00';
+  const timeMonthFormatted = mensalSeconds > 0 ? formatSec(mensalSeconds) : '00:00:00';
+  const timeWeekFormatted = semanalSeconds > 0 ? formatSec(semanalSeconds) : '00:00:00';
 
   const titles = [
     'TOTAL ATIVIDADES', 'DISTÂNCIA TOTAL', 'DISTÂNCIA MÊS', 'DISTÂNCIA SEM',
@@ -380,25 +423,25 @@ function atualizarCardsCardio(sheet) {
   ];
 
   const values = [
-    `${cardios.length || 3} atividade(s)`,
-    `${(totalKm || 16.74).toFixed(2).replace('.', ',')} km`,
-    `${(totalKm || 16.74).toFixed(2).replace('.', ',')} km`,
-    `${(totalKm || 16.74).toFixed(2).replace('.', ',')} km`,
+    `${cardios.length} atividade(s)`,
+    `${totalKm.toFixed(2).replace('.', ',')} km`,
+    `${mensalKm.toFixed(2).replace('.', ',')} km`,
+    `${semanalKm.toFixed(2).replace('.', ',')} km`,
     timeFormatted,
-    timeFormatted,
-    timeFormatted,
-    `${(totalPassos || 20860).toLocaleString('pt-BR')} passos`,
-    `${(totalPassos || 20860).toLocaleString('pt-BR')} passos`,
-    `${(totalPassos || 20860).toLocaleString('pt-BR')} passos`,
-    `${(totalKcal || 1366).toLocaleString('pt-BR')} kcal`,
-    `${(totalKcal || 1366).toLocaleString('pt-BR')} kcal`,
-    `${(totalKcal || 1366).toLocaleString('pt-BR')} kcal`,
-    `${(caminhadaTotal || 16.74).toFixed(2).replace('.', ',')} km`,
-    `${(caminhadaMensal || 16.74).toFixed(2).replace('.', ',')} km`,
-    `${(caminhadaSemanal || 16.74).toFixed(2).replace('.', ',')} km`,
-    `${(bikeTotal || 0).toFixed(2).replace('.', ',')} km`,
-    `${(bikeMensal || 0).toFixed(2).replace('.', ',')} km`,
-    `${(bikeSemanal || 0).toFixed(2).replace('.', ',')} km`
+    timeMonthFormatted,
+    timeWeekFormatted,
+    `${totalPassos.toLocaleString('pt-BR')} passos`,
+    `${mensalPassos.toLocaleString('pt-BR')} passos`,
+    `${semanalPassos.toLocaleString('pt-BR')} passos`,
+    `${totalKcal.toLocaleString('pt-BR')} kcal`,
+    `${mensalKcal.toLocaleString('pt-BR')} kcal`,
+    `${semanalKcal.toLocaleString('pt-BR')} kcal`,
+    `${caminhadaTotal.toFixed(2).replace('.', ',')} km`,
+    `${caminhadaMensal.toFixed(2).replace('.', ',')} km`,
+    `${caminhadaSemanal.toFixed(2).replace('.', ',')} km`,
+    `${bikeTotal.toFixed(2).replace('.', ',')} km`,
+    `${bikeMensal.toFixed(2).replace('.', ',')} km`,
+    `${bikeSemanal.toFixed(2).replace('.', ',')} km`
   ];
 
   const subtitles = [
@@ -504,17 +547,33 @@ function atualizarCardsTreinos(sheet) {
   sheet.getRange('A4:Z8').clear().clearFormat();
 
   const workouts = parseWorkoutSheet(sheet);
-  let totalMinutos = 0;
-  let totalCalorias = 0;
+  const today = new Date();
+
+  let totalMinutos = 0, mensalMinutos = 0, semanalMinutos = 0;
+  let totalCalorias = 0, mensalCalorias = 0, semanalCalorias = 0;
   const diasSet = new Set();
   let ultimoFoco = 'Costas / Bíceps';
 
   workouts.forEach(w => {
     if (w.data) diasSet.add(w.data);
-    totalMinutos += w.duracaoMin || 0;
+    const mins = w.duracaoMin || 0;
+    totalMinutos += mins;
     const cal = w.calorias || estimateGymCaloriesAppsScript(w.duracaoMin, 111.45, w.focoDivisao);
     totalCalorias += cal;
     if (w.focoDivisao) ultimoFoco = w.focoDivisao;
+
+    const d = parseBRDateGAS(w.data);
+    const isSameMonth = d && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+    const isSameWeek = d && isSameWeekMondayToSundayGAS(d, today);
+
+    if (isSameMonth) {
+      mensalMinutos += mins;
+      mensalCalorias += cal;
+    }
+    if (isSameWeek) {
+      semanalMinutos += mins;
+      semanalCalorias += cal;
+    }
   });
 
   const titles = [
@@ -523,15 +582,15 @@ function atualizarCardsTreinos(sheet) {
   ];
 
   const values = [
-    `${workouts.length || 3} treino(s)`,
-    `${totalMinutos || 135} min`,
-    `${totalMinutos || 135} min`,
-    `${totalMinutos || 135} min`,
-    `${diasSet.size || 3} dia(s)`,
+    `${workouts.length} treino(s)`,
+    `${totalMinutos} min`,
+    `${mensalMinutos} min`,
+    `${semanalMinutos} min`,
+    `${diasSet.size} dia(s)`,
     ultimoFoco,
-    `${(totalCalorias || 916).toLocaleString('pt-BR')} kcal`,
-    `${(totalCalorias || 916).toLocaleString('pt-BR')} kcal`,
-    `${(totalCalorias || 916).toLocaleString('pt-BR')} kcal`
+    `${totalCalorias.toLocaleString('pt-BR')} kcal`,
+    `${mensalCalorias.toLocaleString('pt-BR')} kcal`,
+    `${semanalCalorias.toLocaleString('pt-BR')} kcal`
   ];
 
   const subtitles = [

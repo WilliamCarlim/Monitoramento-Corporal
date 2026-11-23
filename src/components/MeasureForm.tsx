@@ -13,7 +13,7 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({ onSubmit, onSuccess })
   const [data, setData] = useState<string>(getTodayBR());
 
   // Core / Tronco
-  const [abdomen, setAbdomen] = useState<string>('127');
+  const [abdomen, setAbdomen] = useState<string>('125');
   const [cintura, setCintura] = useState<string>('');
   const [quadril, setQuadril] = useState<string>('');
   const [torax, setTorax] = useState<string>('');
@@ -332,7 +332,7 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({ onSubmit, onSuccess })
                 type="text"
                 value={abdomen}
                 onChange={(e) => setAbdomen(e.target.value)}
-                placeholder="127"
+                placeholder="125"
                 className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white font-bold text-sm"
               />
             </div>

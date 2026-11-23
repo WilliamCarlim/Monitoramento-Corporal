@@ -14,7 +14,7 @@ interface GeminiAssistantProps {
 const QUICK_PROMPTS = [
   'Analisar minha evolução geral e próximos focos',
   'Explicar oscilação de peso pós-treino e almoço',
-  'Interpretar medida de abdômen de 127cm com trena vs fita métrica',
+  'Interpretar medidas corporais e evolução do abdômen (125 cm)',
   'Analisar meu último cardio do Strava e gasto calórico',
   'Analisar meu treino de musculação na Fast fit (Peitoral/Tríceps)',
   'Qual o protocolo ideal de pesagem e medidas para os próximos dias?',
@@ -28,7 +28,7 @@ export const GeminiAssistant: React.FC<GeminiAssistantProps> = ({
   photos = [],
 }) => {
   const latestWeight = weights.length > 0 ? weights[weights.length - 1] : null;
-  const latestAbdomen = [...measures].reverse().find(m => m.abdomen)?.abdomen || 127;
+  const latestAbdomen = [...measures].reverse().find(m => m.abdomen)?.abdomen || 125;
   const latestCardio = cardios.length > 0 ? cardios[cardios.length - 1] : null;
   const latestWorkout = workouts.length > 0 ? workouts[workouts.length - 1] : null;
 

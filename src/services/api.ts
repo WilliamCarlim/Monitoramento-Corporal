@@ -88,9 +88,9 @@ function sanitizeMeasures(list: any[]): MeasureRecord[] {
 
       let abdomen = m.abdomen;
       let quadril = m.quadril;
-      if ((!abdomen || abdomen === 0) && quadril === 127) {
-        abdomen = 127;
-        quadril = undefined;
+      if ((!abdomen || abdomen === 0) && quadril === 125) {
+        abdomen = 125;
+        quadril = 123;
       }
 
       return {
@@ -768,7 +768,7 @@ Olá! Aqui está o resumo das suas métricas consolidadas das **5 abas da planil
 * **Peso Atual:** ${lastWeight?.peso || 111.450} kg (Variação: ${Number(diffTotal) > 0 ? `+${diffTotal}` : diffTotal} kg)
 * **Composição Corporal:** Gordura: ${lastWeight?.gorduraPercent || 35.2}% (${lastWeight?.pesoGordura || 39.2} kg) | Massa Muscular: ${lastWeight?.massaMuscularPercent || 62.2}% (${lastWeight?.pesoMassaMuscular || 69.3} kg)
 * **Gordura Visceral:** ${lastWeight?.gorduraVisceral || 25.5} | **Taxa Basal:** ${lastWeight?.metabolismo || 2122.0} kcal/dia
-* **Medida Abdominal Atual:** ${measures[measures.length - 1]?.abdomen || 127} cm
+* **Medida Abdominal Atual:** ${measures[measures.length - 1]?.abdomen || 125} cm
 * **Cardio:** ${cardios.length} atividade(s) aeróbica(s) registrada(s) (última: ${cardios[cardios.length - 1]?.modalidade || 'Caminhada'} de ${cardios[cardios.length - 1]?.distanciaKm || 5.34} km)
 * **Musculação:** ${workouts.length} treino(s) na academia (último foco: ${workouts[workouts.length - 1]?.focoDivisao || 'Costas / Bíceps'})
 * **Fotos Semanais:** ${photos.length} registro(s)

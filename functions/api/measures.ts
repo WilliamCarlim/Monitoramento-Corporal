@@ -3,18 +3,22 @@ import { Env, DEFAULT_SPREADSHEET_ID, getGoogleAccessToken } from './sheets-help
 const BASELINE_MEASURES = [
   {
     id: 'm-0',
-    data: '10/05/2026',
+    data: '17/11/2026',
+    torax: 117,
+    cintura: 117,
+    abdomen: 125,
+    quadril: 123,
+    bracoDir: 35,
+    bracoEsq: 35,
+    coxaDir: 62.5,
+    coxaEsq: 63.5,
+    panturrilhaDir: 41.5,
+    panturrilhaEsq: 41.5,
     pesoAvaliacao: 112.0,
     gorduraAvaliacao: 40.3,
     massaGordura: 45.1,
     massaSemGordura: 66.9,
-    observacoes: 'Avaliação Física Academia Panobianco • Ticket 1038, Máquina 8678, Bariri (Altura: 176 cm, Idade: 34)',
-  },
-  {
-    id: 'm-1',
-    data: '16/11/2026',
-    abdomen: 127,
-    observacoes: 'Medição preliminar com trena na altura do umbigo, soltando o ar até ficar sem fôlego (aguardando fita métrica para medida oficial)',
+    observacoes: 'Avaliação Panobianco Bariri • Ticket 1038, Máquina 8678 (Altura: 176 cm, Idade: 34)',
   },
 ];
 

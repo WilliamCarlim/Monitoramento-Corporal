@@ -37,7 +37,7 @@ Aplicação web moderna, rápida e responsiva (mobile-first e desktop) para regi
 
 ### Dados de Partida Preservados:
 * **Peso Inicial:** `113,250 kg` em `16/11/2026` (Almoço / pós-academia, IMC `34,95` com `1,80 m`).
-* **Medida Preliminar:** Abdômen de `127 cm` (altura do umbigo, expirando até ficar sem fôlego).
+* **Medidas Oficiais (17/11/2026):** Avaliação Panobianco Bariri (Ticket 1038) com Abdômen de `125 cm`, Tórax `117 cm`, Cintura `117 cm`, Quadril `123 cm`, Braços `35 cm`, Coxas `62,5/63,5 cm`, Panturrilhas `41,5 cm`, Peso `112,0 kg`, Gordura `40,3%`.
 
 ---
 

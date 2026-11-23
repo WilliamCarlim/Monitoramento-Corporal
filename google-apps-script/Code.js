@@ -228,27 +228,16 @@ function organizarAbaMedidas(ss) {
   sheet.getRange(5, 2, 1, header.length).setValues([header]);
   sheet.getRange(5, 2, 1, header.length).setFontWeight('bold').setBackground('#0e7490').setFontColor('#ffffff');
 
-  // Linha 6: Avaliação Panobianco de 17/11/2026
-  const val6 = sheet.getRange(6, 2).getValue();
-  if (!val6 || String(val6).toLowerCase().includes('data')) {
-    const row17Nov = [
-      '17/11/2026', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
-      '112,0', '40,3', '45,1', '66,9',
-      'Avaliação Panobianco Bariri • Ticket 1038, Máquina 8678 (Altura: 176 cm, Idade: 34)'
-    ];
-    sheet.getRange(6, 2, 1, row17Nov.length).setValues([row17Nov]);
-  }
+  // Limpa linhas 7 a 20 para garantir que o dia 16/11 ou dados residuais sejam removidos
+  sheet.getRange('A7:Z20').clear().clearFormat();
 
-  // Linha 7: Medição preliminar de 16/11/2026
-  const val7 = sheet.getRange(7, 2).getValue();
-  if (!val7 || String(val7).toLowerCase().includes('data')) {
-    const row16Nov = [
-      '16/11/2026', '', '', '', '', '127,0', '', '', '', '', '', '', '', '', '',
-      '', '', '', '',
-      'Medição preliminar com trena na altura do umbigo, soltando o ar até ficar sem fôlego (aguardando fita métrica oficial)'
-    ];
-    sheet.getRange(7, 2, 1, row16Nov.length).setValues([row16Nov]);
-  }
+  // Linha 6: Avaliação Panobianco de 17/11/2026 (OFICIAL ÚNICA - com Abdômen 125,0 cm)
+  const row17Nov = [
+    '17/11/2026', '', '', '117,0', '117,0', '125,0', '123,0', '35,0', '35,0', '', '', '62,5', '63,5', '41,5', '41,5',
+    '112,0', '40,3', '45,1', '66,9',
+    'Avaliação Panobianco Bariri • Ticket 1038, Máquina 8678 (Altura: 176 cm, Idade: 34)'
+  ];
+  sheet.getRange(6, 2, 1, row17Nov.length).setValues([row17Nov]);
 
   return sheet;
 }
@@ -263,7 +252,8 @@ function organizarAbaCardio(ss) {
     sheet = ss.insertSheet('Cardio');
   }
 
-  // 1. Limpa completamente as linhas 4 a 8 (remove blocos duplicados de versões anteriores)
+  // 1. Desfaz qualquer mesclagem residual das linhas 4 a 9 e limpa a área de cards (linhas 4 a 8)
+  sheet.getRange('A4:Z9').breakApart();
   sheet.getRange('A4:Z8').clear().clearFormat();
 
   // 2. Cabeçalho oficial na Linha 9
@@ -275,36 +265,39 @@ function organizarAbaCardio(ss) {
   sheet.getRange(9, 2, 1, header.length).setValues([header]);
   sheet.getRange(9, 2, 1, header.length).setFontWeight('bold').setBackground('#0284c7').setFontColor('#ffffff');
 
-  // 3. Registros oficiais: Linha 10 (16/11), Linha 11 (17/11) e Linha 12 (18/11)
-  const val10 = sheet.getRange(10, 2).getValue();
-  if (!val10 || String(val10).toLowerCase().includes('data')) {
-    const row1 = [
-      '16/11/2026', 'segunda-feira', 'Entardecer 18:12', 'Caminhada', 'Strava • Bariri, SP',
+  // 3. Limpa linhas de dados 10 a 30 para eliminar linhas desalinhadas antigas (como 18/11 na linha 8)
+  sheet.getRange('A10:Z30').clear().clearFormat();
+
+  // 4. Registros oficiais completos (5 atividades cronológicas de cardio)
+  const defaultCardios = [
+    [
+      '16/11/2026', 'segunda-feira', 'Entardecer (18:12)', 'Caminhada', 'Strava • Bariri, SP',
+      '5,70', '00:58:48', '6.944', '51', '470',
+      'Caminhada ao entardecer registrada no Strava (ritmo médio ~10,3 min/km)'
+    ],
+    [
+      '17/11/2026', 'terça-feira', 'Entardecer / Vespertino (17:40)', 'Caminhada', 'Strava • Bariri, SP',
+      '5,70', '00:57:28', '6.968', '50', '444',
+      'Caminhada vespertina registrada no Strava App (ritmo médio ~10,1 min/km • 5,95 km/h)'
+    ],
+    [
+      '17/11/2026', 'terça-feira', 'Entardecer / Noite (18:12)', 'Caminhada', 'Strava • Bariri, SP',
       '5,70', '00:58:43', '6.944', '51', '470',
       'Caminhada ao entardecer registrada no Strava (ritmo médio ~10,3 min/km)'
-    ];
-    sheet.getRange(10, 2, 1, row1.length).setValues([row1]);
-  }
-
-  const val11 = sheet.getRange(11, 2).getValue();
-  if (!val11 || String(val11).trim() === '') {
-    const row2 = [
-      '17/11/2026', 'terça-feira', 'Entardecer 17:40', 'Caminhada', 'Strava • Bariri, SP',
-      '5,70', '00:57:28', '6.968', '50', '444',
-      'Caminhada ao entardecer registrada no Strava (ritmo médio ~10,1 min/km)'
-    ];
-    sheet.getRange(11, 2, 1, row2.length).setValues([row2]);
-  }
-
-  const val12 = sheet.getRange(12, 2).getValue();
-  if (!val12 || String(val12).trim() === '') {
-    const row3 = [
-      '18/11/2026', 'quarta-feira', 'Manhã 05:21', 'Caminhada', 'Strava • Lago Municipal',
+    ],
+    [
+      '18/11/2026', 'quarta-feira', 'Manhã (05:21)', 'Caminhada', 'Strava • Lago Municipal',
       '5,34', '01:01:19', '6.948', '48', '452',
-      'Caminhada matinal no Lago Municipal registrada no Strava'
-    ];
-    sheet.getRange(12, 2, 1, row3.length).setValues([row3]);
-  }
+      'Atividade realizada no Lago Municipal'
+    ],
+    [
+      '19/11/2026', 'quinta-feira', 'Vespertino (17:32)', 'Caminhada', 'Strava • Bariri, São Paulo',
+      '5,78', '01:05:43', '7.506', '50', '514',
+      'Atividade: Caminhada vespertina gravada com Strava App'
+    ]
+  ];
+
+  sheet.getRange(10, 2, defaultCardios.length, header.length).setValues(defaultCardios);
 
   // Validação suspensa para Modalidades na coluna E (coluna 5, que é B=2, C=3, D=4, E=5)
   try {
@@ -345,6 +338,7 @@ function parseBRDateGAS(dStr) {
 }
 
 function atualizarCardsCardio(sheet) {
+  sheet.getRange('A4:Z8').breakApart();
   sheet.getRange('A4:Z8').clear().clearFormat();
 
   const cardios = parseCardioSheet(sheet);

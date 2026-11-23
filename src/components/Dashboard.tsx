@@ -120,7 +120,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   // Latest abdominal measurement
   const latestAbdomenRecord = [...measures].reverse().find((m) => m.abdomen && m.abdomen > 0);
-  const latestAbdomen = latestAbdomenRecord ? latestAbdomenRecord.abdomen : 127;
+  const latestAbdomen = latestAbdomenRecord ? latestAbdomenRecord.abdomen : 125;
 
   // Helper de parse de data DD/MM/AAAA
   const parseBRDate = (dStr?: string): Date | null => {
@@ -370,7 +370,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <div className="bg-slate-900/70 border border-slate-700/60 px-3 py-1.5 rounded-xl flex items-center gap-2">
               <Ruler className="w-3.5 h-3.5 text-cyan-400" />
               <span className="text-slate-400">Abdômen:</span>
-              <strong className="text-white font-semibold">{latestAbdomen || 127} cm</strong>
+              <strong className="text-white font-semibold">{latestAbdomen || 125} cm</strong>
             </div>
 
             <div className="bg-slate-900/70 border border-slate-700/60 px-3 py-1.5 rounded-xl flex items-center gap-2">

@@ -268,32 +268,32 @@ function organizarAbaCardio(ss) {
   // 3. Limpa linhas de dados 10 a 30 para eliminar linhas desalinhadas antigas (como 18/11 na linha 8)
   sheet.getRange('A10:Z30').clear().clearFormat();
 
-  // 4. Registros oficiais completos (5 atividades cronológicas de cardio)
+  // 4. Registros oficiais completos (5 atividades cronológicas de cardio do Strava)
   const defaultCardios = [
     [
-      '16/11/2026', 'segunda-feira', 'Entardecer (18:12)', 'Caminhada', 'Strava • Bariri, SP',
-      '5,70', '00:58:48', '6.944', '51', '470',
-      'Caminhada ao entardecer registrada no Strava (ritmo médio ~10,3 min/km)'
-    ],
-    [
-      '17/11/2026', 'terça-feira', 'Entardecer / Vespertino (17:40)', 'Caminhada', 'Strava • Bariri, SP',
-      '5,70', '00:57:28', '6.968', '50', '444',
-      'Caminhada vespertina registrada no Strava App (ritmo médio ~10,1 min/km • 5,95 km/h)'
-    ],
-    [
-      '17/11/2026', 'terça-feira', 'Entardecer / Noite (18:12)', 'Caminhada', 'Strava • Bariri, SP',
+      '16/11/2026', 'segunda-feira', 'Entardecer (18:12)', 'Caminhada', 'Strava • Bariri, São Paulo',
       '5,70', '00:58:43', '6.944', '51', '470',
-      'Caminhada ao entardecer registrada no Strava (ritmo médio ~10,3 min/km)'
+      'Caminhada ao entardecer gravada no Strava App'
     ],
     [
-      '18/11/2026', 'quarta-feira', 'Manhã (05:21)', 'Caminhada', 'Strava • Lago Municipal',
-      '5,34', '01:01:19', '6.948', '48', '452',
-      'Atividade realizada no Lago Municipal'
+      '17/11/2026', 'terça-feira', 'Vespertino (17:40)', 'Caminhada', 'Strava • Bariri, São Paulo',
+      '5,70', '00:57:28', '6.968', '50', '444',
+      'Caminhada vespertina gravada no Strava App'
+    ],
+    [
+      '18/11/2026', 'quarta-feira', 'Manhã (05:21)', 'Caminhada', 'Strava • Bariri, São Paulo',
+      '5,34', '01:01:19', '6.948', '19', '452',
+      'Caminhada matinal gravada no Strava App'
     ],
     [
       '19/11/2026', 'quinta-feira', 'Vespertino (17:32)', 'Caminhada', 'Strava • Bariri, São Paulo',
       '5,78', '01:05:43', '7.506', '50', '514',
-      'Atividade: Caminhada vespertina gravada com Strava App'
+      'Caminhada vespertina gravada no Strava App'
+    ],
+    [
+      '20/11/2026', 'sexta-feira', 'Manhã (09:57)', 'Caminhada', 'Strava • Bariri, São Paulo',
+      '4,10', '00:44:48', '5.238', '12', '320',
+      'Caminhada matinal gravada no Strava App'
     ]
   ];
 

@@ -640,17 +640,20 @@ export async function extractFromPrint(
   const optimizedBase64 = await compressBase64Image(imageBase64);
 
   // Try 1: Cloudflare Pages /api/ocr (usa env.GEMINI_API_KEY do Cloudflare ou apiKey das configurações)
+  let apiErrorMessage = '';
   try {
     const res = await fetch('/api/ocr', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ imageBase64: optimizedBase64, type, apiKey: apiKey || undefined }),
     });
-    if (res.ok) {
-      const json = await res.json();
-      if (json.success && json.data) {
-        return { success: true, data: json.data };
-      }
+    const json = await res.json().catch(() => null);
+    if (res.ok && json && json.success && json.data) {
+      return { success: true, data: json.data };
+    }
+    if (json && json.error) {
+      apiErrorMessage = json.error;
+      console.warn('/api/ocr returned error:', json.error);
     }
   } catch (e) {
     console.warn('/api/ocr request error, attempting direct Gemini fallback', e);
@@ -675,7 +678,13 @@ export async function extractFromPrint(
       prompt = 'Extraia medidas corporais e bioimpedância mensal em JSON: { "data": string, "pescoco": number, "ombro": number, "torax": number, "cintura": number, "abdomen": number, "quadril": number, "bracoDir": number, "bracoEsq": number, "antebracoDir": number, "antebracoEsq": number, "coxaDir": number, "coxaEsq": number, "panturrilhaDir": number, "panturrilhaEsq": number, "pesoAvaliacao": number, "gorduraAvaliacao": number, "massaGordura": number, "massaSemGordura": number, "observacoes": string }. Apenas JSON sem markdown.';
     }
 
-    const CANDIDATE_MODELS = ['gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-2.5-flash'];
+    const CANDIDATE_MODELS = [
+      'gemini-3.5-flash-lite',
+      'gemini-3.5-flash',
+      'gemini-3-flash-preview',
+      'gemini-3.8-flash',
+      'gemini-2.5-flash',
+    ];
     for (const model of CANDIDATE_MODELS) {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
       const res = await fetch(url, {
@@ -705,7 +714,10 @@ export async function extractFromPrint(
     }
   }
 
-  return { success: false, error: 'Não foi possível extrair dados automaticamente. Preencha manualmente ou revise a chave do Gemini.' };
+  return {
+    success: false,
+    error: apiErrorMessage || 'Não foi possível extrair dados automaticamente. Preencha manualmente ou revise a chave do Gemini.',
+  };
 }
 
 // ----------------------------------------------------------------------
@@ -782,10 +794,12 @@ Histórico recente das 5 abas:
 Responda EXATAMENTE ao que foi perguntado de forma clara, técnica, motivadora e estruturada em Markdown com títulos e tópicos.`;
 
       const candidateModels = [
+        'gemini-3.5-flash-lite',
+        'gemini-3.5-flash',
+        'gemini-3-flash-preview',
+        'gemini-3.8-flash',
+        'gemini-2.5-flash',
         'gemini-1.5-flash',
-        'gemini-2.0-flash',
-        'gemini-1.5-flash-latest',
-        'gemini-1.5-pro',
       ];
 
       for (const model of candidateModels) {

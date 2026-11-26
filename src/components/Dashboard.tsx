@@ -148,6 +148,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const initBracoEsq = firstMeasureRecord?.bracoEsq ?? 35;
   const currBracoEsq = latestMeasureRecord?.bracoEsq ?? initBracoEsq;
+  const diffBracoEsq = Number((currBracoEsq - initBracoEsq).toFixed(1));
 
   const initCoxaDir = firstMeasureRecord?.coxaDir ?? 62.5;
   const currCoxaDir = latestMeasureRecord?.coxaDir ?? initCoxaDir;
@@ -155,6 +156,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const initCoxaEsq = firstMeasureRecord?.coxaEsq ?? 63.5;
   const currCoxaEsq = latestMeasureRecord?.coxaEsq ?? initCoxaEsq;
+  const diffCoxaEsq = Number((currCoxaEsq - initCoxaEsq).toFixed(1));
 
   const initPanturrilhaDir = firstMeasureRecord?.panturrilhaDir ?? 41.5;
   const currPanturrilhaDir = latestMeasureRecord?.panturrilhaDir ?? initPanturrilhaDir;
@@ -162,6 +164,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const initPanturrilhaEsq = firstMeasureRecord?.panturrilhaEsq ?? 41.5;
   const currPanturrilhaEsq = latestMeasureRecord?.panturrilhaEsq ?? initPanturrilhaEsq;
+  const diffPanturrilhaEsq = Number((currPanturrilhaEsq - initPanturrilhaEsq).toFixed(1));
 
   const initPesoAval = firstMeasureRecord?.pesoAvaliacao ?? 112.0;
   const currPesoAval = latestMeasureRecord?.pesoAvaliacao ?? initPesoAval;
@@ -781,21 +784,39 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 </div>
 
                 <div className="bg-slate-900/40 border border-slate-700/40 p-2.5 rounded-xl">
-                  <span className="text-[11px] font-semibold text-slate-400 block truncate">Braço (Dir / Esq)</span>
+                  <span className="text-[11px] font-semibold text-slate-400 block truncate">Braço Dir</span>
                   <span className="text-lg font-bold text-white block mt-0.5">{formatBRNumber(initBracoDir, 1)} cm</span>
-                  <span className="text-[10px] text-slate-400">Dir: {formatBRNumber(initBracoDir, 1)} • Esq: {formatBRNumber(initBracoEsq, 1)}</span>
+                  <span className="text-[10px] text-slate-400">Braço direito</span>
                 </div>
 
                 <div className="bg-slate-900/40 border border-slate-700/40 p-2.5 rounded-xl">
-                  <span className="text-[11px] font-semibold text-slate-400 block truncate">Coxa (Dir / Esq)</span>
-                  <span className="text-lg font-bold text-white block mt-0.5">{formatBRNumber(initCoxaDir, 1)} / {formatBRNumber(initCoxaEsq, 1)}</span>
-                  <span className="text-[10px] text-slate-400">Dir: {formatBRNumber(initCoxaDir, 1)} • Esq: {formatBRNumber(initCoxaEsq, 1)}</span>
+                  <span className="text-[11px] font-semibold text-slate-400 block truncate">Braço Esq</span>
+                  <span className="text-lg font-bold text-white block mt-0.5">{formatBRNumber(initBracoEsq, 1)} cm</span>
+                  <span className="text-[10px] text-slate-400">Braço esquerdo</span>
                 </div>
 
                 <div className="bg-slate-900/40 border border-slate-700/40 p-2.5 rounded-xl">
-                  <span className="text-[11px] font-semibold text-slate-400 block truncate">Panturrilha</span>
+                  <span className="text-[11px] font-semibold text-slate-400 block truncate">Coxa Dir</span>
+                  <span className="text-lg font-bold text-white block mt-0.5">{formatBRNumber(initCoxaDir, 1)} cm</span>
+                  <span className="text-[10px] text-slate-400">Coxa direita</span>
+                </div>
+
+                <div className="bg-slate-900/40 border border-slate-700/40 p-2.5 rounded-xl">
+                  <span className="text-[11px] font-semibold text-slate-400 block truncate">Coxa Esq</span>
+                  <span className="text-lg font-bold text-white block mt-0.5">{formatBRNumber(initCoxaEsq, 1)} cm</span>
+                  <span className="text-[10px] text-slate-400">Coxa esquerda</span>
+                </div>
+
+                <div className="bg-slate-900/40 border border-slate-700/40 p-2.5 rounded-xl">
+                  <span className="text-[11px] font-semibold text-slate-400 block truncate">Panturrilha Dir</span>
                   <span className="text-lg font-bold text-white block mt-0.5">{formatBRNumber(initPanturrilhaDir, 1)} cm</span>
-                  <span className="text-[10px] text-slate-400">Dir: {formatBRNumber(initPanturrilhaDir, 1)} • Esq: {formatBRNumber(initPanturrilhaEsq, 1)}</span>
+                  <span className="text-[10px] text-slate-400">Panturrilha direita</span>
+                </div>
+
+                <div className="bg-slate-900/40 border border-slate-700/40 p-2.5 rounded-xl">
+                  <span className="text-[11px] font-semibold text-slate-400 block truncate">Panturrilha Esq</span>
+                  <span className="text-lg font-bold text-white block mt-0.5">{formatBRNumber(initPanturrilhaEsq, 1)} cm</span>
+                  <span className="text-[10px] text-slate-400">Panturrilha esquerda</span>
                 </div>
 
                 <div className="bg-slate-900/40 border border-slate-700/40 p-2.5 rounded-xl col-span-2 sm:col-span-3">
@@ -922,12 +943,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                 <div className="bg-slate-900/40 border border-slate-700/40 p-2.5 rounded-xl flex flex-col justify-between">
                   <div>
-                    <span className="text-[11px] font-semibold text-slate-300 block truncate">Braço Atual (D/E)</span>
-                    <span className="text-lg font-bold text-white block mt-0.5">{formatBRNumber(currBracoDir, 1)} / {formatBRNumber(currBracoEsq, 1)} cm</span>
+                    <span className="text-[11px] font-semibold text-slate-300 block truncate">Braço Dir Atual</span>
+                    <span className="text-lg font-bold text-white block mt-0.5">{formatBRNumber(currBracoDir, 1)} cm</span>
                   </div>
                   <div className="mt-2 pt-1 border-t border-slate-700/50 flex items-center justify-between text-[11px]">
-                    <span className="text-slate-400">Variação Dir</span>
+                    <span className="text-slate-400">Variação</span>
                     <span className={`font-bold flex items-center gap-0.5 ${diffBracoDir < 0 ? 'text-emerald-400' : diffBracoDir > 0 ? 'text-cyan-400' : 'text-slate-400'}`}>
+                      {diffBracoDir < 0 ? <TrendingDown className="w-3 h-3" /> : diffBracoDir > 0 ? <TrendingUp className="w-3 h-3" /> : null}
                       {diffBracoDir > 0 ? `+${formatBRNumber(diffBracoDir, 1)} cm` : `${formatBRNumber(diffBracoDir, 1)} cm`}
                     </span>
                   </div>
@@ -935,11 +957,25 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                 <div className="bg-slate-900/40 border border-slate-700/40 p-2.5 rounded-xl flex flex-col justify-between">
                   <div>
-                    <span className="text-[11px] font-semibold text-slate-300 block truncate">Coxa Atual (D/E)</span>
-                    <span className="text-lg font-bold text-white block mt-0.5">{formatBRNumber(currCoxaDir, 1)} / {formatBRNumber(currCoxaEsq, 1)}</span>
+                    <span className="text-[11px] font-semibold text-slate-300 block truncate">Braço Esq Atual</span>
+                    <span className="text-lg font-bold text-white block mt-0.5">{formatBRNumber(currBracoEsq, 1)} cm</span>
                   </div>
                   <div className="mt-2 pt-1 border-t border-slate-700/50 flex items-center justify-between text-[11px]">
-                    <span className="text-slate-400">Variação Dir</span>
+                    <span className="text-slate-400">Variação</span>
+                    <span className={`font-bold flex items-center gap-0.5 ${diffBracoEsq < 0 ? 'text-emerald-400' : diffBracoEsq > 0 ? 'text-cyan-400' : 'text-slate-400'}`}>
+                      {diffBracoEsq < 0 ? <TrendingDown className="w-3 h-3" /> : diffBracoEsq > 0 ? <TrendingUp className="w-3 h-3" /> : null}
+                      {diffBracoEsq > 0 ? `+${formatBRNumber(diffBracoEsq, 1)} cm` : `${formatBRNumber(diffBracoEsq, 1)} cm`}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-slate-900/40 border border-slate-700/40 p-2.5 rounded-xl flex flex-col justify-between">
+                  <div>
+                    <span className="text-[11px] font-semibold text-slate-300 block truncate">Coxa Dir Atual</span>
+                    <span className="text-lg font-bold text-white block mt-0.5">{formatBRNumber(currCoxaDir, 1)} cm</span>
+                  </div>
+                  <div className="mt-2 pt-1 border-t border-slate-700/50 flex items-center justify-between text-[11px]">
+                    <span className="text-slate-400">Variação</span>
                     <span className={`font-bold flex items-center gap-0.5 ${diffCoxaDir < 0 ? 'text-emerald-400' : diffCoxaDir > 0 ? 'text-amber-400' : 'text-slate-400'}`}>
                       {diffCoxaDir < 0 ? <TrendingDown className="w-3 h-3" /> : diffCoxaDir > 0 ? <TrendingUp className="w-3 h-3" /> : null}
                       {diffCoxaDir > 0 ? `+${formatBRNumber(diffCoxaDir, 1)} cm` : `${formatBRNumber(diffCoxaDir, 1)} cm`}
@@ -949,14 +985,42 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                 <div className="bg-slate-900/40 border border-slate-700/40 p-2.5 rounded-xl flex flex-col justify-between">
                   <div>
-                    <span className="text-[11px] font-semibold text-slate-300 block truncate">Panturrilha Atual (D/E)</span>
-                    <span className="text-lg font-bold text-white block mt-0.5">{formatBRNumber(currPanturrilhaDir, 1)} / {formatBRNumber(currPanturrilhaEsq, 1)} cm</span>
+                    <span className="text-[11px] font-semibold text-slate-300 block truncate">Coxa Esq Atual</span>
+                    <span className="text-lg font-bold text-white block mt-0.5">{formatBRNumber(currCoxaEsq, 1)} cm</span>
                   </div>
                   <div className="mt-2 pt-1 border-t border-slate-700/50 flex items-center justify-between text-[11px]">
-                    <span className="text-slate-400">Variação Dir</span>
+                    <span className="text-slate-400">Variação</span>
+                    <span className={`font-bold flex items-center gap-0.5 ${diffCoxaEsq < 0 ? 'text-emerald-400' : diffCoxaEsq > 0 ? 'text-amber-400' : 'text-slate-400'}`}>
+                      {diffCoxaEsq < 0 ? <TrendingDown className="w-3 h-3" /> : diffCoxaEsq > 0 ? <TrendingUp className="w-3 h-3" /> : null}
+                      {diffCoxaEsq > 0 ? `+${formatBRNumber(diffCoxaEsq, 1)} cm` : `${formatBRNumber(diffCoxaEsq, 1)} cm`}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-slate-900/40 border border-slate-700/40 p-2.5 rounded-xl flex flex-col justify-between">
+                  <div>
+                    <span className="text-[11px] font-semibold text-slate-300 block truncate">Panturrilha Dir Atual</span>
+                    <span className="text-lg font-bold text-white block mt-0.5">{formatBRNumber(currPanturrilhaDir, 1)} cm</span>
+                  </div>
+                  <div className="mt-2 pt-1 border-t border-slate-700/50 flex items-center justify-between text-[11px]">
+                    <span className="text-slate-400">Variação</span>
                     <span className={`font-bold flex items-center gap-0.5 ${diffPanturrilhaDir < 0 ? 'text-emerald-400' : diffPanturrilhaDir > 0 ? 'text-amber-400' : 'text-slate-400'}`}>
                       {diffPanturrilhaDir < 0 ? <TrendingDown className="w-3 h-3" /> : diffPanturrilhaDir > 0 ? <TrendingUp className="w-3 h-3" /> : null}
                       {diffPanturrilhaDir > 0 ? `+${formatBRNumber(diffPanturrilhaDir, 1)} cm` : `${formatBRNumber(diffPanturrilhaDir, 1)} cm`}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-slate-900/40 border border-slate-700/40 p-2.5 rounded-xl flex flex-col justify-between">
+                  <div>
+                    <span className="text-[11px] font-semibold text-slate-300 block truncate">Panturrilha Esq Atual</span>
+                    <span className="text-lg font-bold text-white block mt-0.5">{formatBRNumber(currPanturrilhaEsq, 1)} cm</span>
+                  </div>
+                  <div className="mt-2 pt-1 border-t border-slate-700/50 flex items-center justify-between text-[11px]">
+                    <span className="text-slate-400">Variação</span>
+                    <span className={`font-bold flex items-center gap-0.5 ${diffPanturrilhaEsq < 0 ? 'text-emerald-400' : diffPanturrilhaEsq > 0 ? 'text-amber-400' : 'text-slate-400'}`}>
+                      {diffPanturrilhaEsq < 0 ? <TrendingDown className="w-3 h-3" /> : diffPanturrilhaEsq > 0 ? <TrendingUp className="w-3 h-3" /> : null}
+                      {diffPanturrilhaEsq > 0 ? `+${formatBRNumber(diffPanturrilhaEsq, 1)} cm` : `${formatBRNumber(diffPanturrilhaEsq, 1)} cm`}
                     </span>
                   </div>
                 </div>

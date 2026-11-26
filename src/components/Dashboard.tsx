@@ -122,6 +122,57 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const latestAbdomenRecord = [...measures].reverse().find((m) => m.abdomen && m.abdomen > 0);
   const latestAbdomen = latestAbdomenRecord ? latestAbdomenRecord.abdomen : 125;
 
+  // Métricas de Medidas Corporais (Linha de Base vs Atual & Variações)
+  const firstMeasureRecord = measures.length > 0 ? measures[0] : null;
+  const latestMeasureRecord = measures.length > 0 ? measures[measures.length - 1] : null;
+
+  const initAbdomen = firstMeasureRecord?.abdomen ?? 125;
+  const currAbdomen = latestMeasureRecord?.abdomen ?? initAbdomen;
+  const diffAbdomen = Number((currAbdomen - initAbdomen).toFixed(1));
+
+  const initTorax = firstMeasureRecord?.torax ?? 117;
+  const currTorax = latestMeasureRecord?.torax ?? initTorax;
+  const diffTorax = Number((currTorax - initTorax).toFixed(1));
+
+  const initCintura = firstMeasureRecord?.cintura ?? 117;
+  const currCintura = latestMeasureRecord?.cintura ?? initCintura;
+  const diffCintura = Number((currCintura - initCintura).toFixed(1));
+
+  const initQuadril = firstMeasureRecord?.quadril ?? 123;
+  const currQuadril = latestMeasureRecord?.quadril ?? initQuadril;
+  const diffQuadril = Number((currQuadril - initQuadril).toFixed(1));
+
+  const initBracoDir = firstMeasureRecord?.bracoDir ?? 35;
+  const currBracoDir = latestMeasureRecord?.bracoDir ?? initBracoDir;
+  const diffBracoDir = Number((currBracoDir - initBracoDir).toFixed(1));
+
+  const initBracoEsq = firstMeasureRecord?.bracoEsq ?? 35;
+  const currBracoEsq = latestMeasureRecord?.bracoEsq ?? initBracoEsq;
+
+  const initCoxaDir = firstMeasureRecord?.coxaDir ?? 62.5;
+  const currCoxaDir = latestMeasureRecord?.coxaDir ?? initCoxaDir;
+  const diffCoxaDir = Number((currCoxaDir - initCoxaDir).toFixed(1));
+
+  const initCoxaEsq = firstMeasureRecord?.coxaEsq ?? 63.5;
+  const currCoxaEsq = latestMeasureRecord?.coxaEsq ?? initCoxaEsq;
+
+  const initPanturrilhaDir = firstMeasureRecord?.panturrilhaDir ?? 41.5;
+  const currPanturrilhaDir = latestMeasureRecord?.panturrilhaDir ?? initPanturrilhaDir;
+  const diffPanturrilhaDir = Number((currPanturrilhaDir - initPanturrilhaDir).toFixed(1));
+
+  const initPanturrilhaEsq = firstMeasureRecord?.panturrilhaEsq ?? 41.5;
+  const currPanturrilhaEsq = latestMeasureRecord?.panturrilhaEsq ?? initPanturrilhaEsq;
+
+  const initPesoAval = firstMeasureRecord?.pesoAvaliacao ?? 112.0;
+  const currPesoAval = latestMeasureRecord?.pesoAvaliacao ?? initPesoAval;
+  const diffPesoAval = Number((currPesoAval - initPesoAval).toFixed(1));
+
+  const initGorduraAval = firstMeasureRecord?.gorduraAvaliacao ?? 40.3;
+  const currGorduraAval = latestMeasureRecord?.gorduraAvaliacao ?? initGorduraAval;
+
+  const initMassaSemGorduraAval = firstMeasureRecord?.massaSemGordura ?? 66.9;
+  const currMassaSemGorduraAval = latestMeasureRecord?.massaSemGordura ?? initMassaSemGorduraAval;
+
   // Helper de parse de data DD/MM/AAAA
   const parseBRDate = (dStr?: string): Date | null => {
     if (!dStr) return null;
@@ -641,6 +692,290 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <span className="font-bold text-slate-300 flex items-center gap-0.5">
                       {diffMetabolismo < 0 ? <TrendingDown className="w-3 h-3" /> : null}
                       {diffMetabolismo > 0 ? `+${formatBRNumber(diffMetabolismo, 0)}` : formatBRNumber(diffMetabolismo, 0)} kcal
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 2 Cards Separados: Medidas Corporais & Circunferências (Início vs Atual) */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-xs uppercase font-bold tracking-wider text-slate-400 flex items-center gap-2">
+            <Ruler className="w-4 h-4 text-cyan-400" />
+            Painel de Medidas Corporais & Circunferências (Comparativo Início vs Atual)
+          </h3>
+          <button
+            onClick={() => onNavigate('measure')}
+            className="text-xs text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1 transition-colors group"
+          >
+            Lançar novas medidas <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+          {/* Card 1: Medidas Iniciais • Linha de Base */}
+          <div className="bg-slate-800/80 backdrop-blur border border-slate-700/70 p-4 sm:p-5 rounded-2xl shadow-lg flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between pb-3 border-b border-slate-700/60 mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-slate-700/50 text-slate-300">
+                    <Ruler className="w-4 h-4 text-slate-300" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-200">
+                      Medidas Iniciais • Linha de Base
+                    </h3>
+                    <p className="text-[11px] text-slate-400">
+                      Avaliação física oficial e circunferências corporais
+                    </p>
+                  </div>
+                </div>
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-700/40 text-slate-300 border border-slate-600/40">
+                  {firstMeasureRecord?.data || '17/11/2026'}
+                </span>
+              </div>
+
+              {/* Featured Abdômen Inicial */}
+              <div className="bg-slate-900/60 border border-slate-700/50 p-4 rounded-xl flex items-center justify-between mb-4">
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                    ABDÔMEN INICIAL
+                  </span>
+                  <div className="mt-1 flex items-baseline gap-1.5">
+                    <span className="text-3xl sm:text-4xl font-black text-white">
+                      {formatBRNumber(initAbdomen, 1)}
+                    </span>
+                    <span className="text-sm font-semibold text-slate-400">cm</span>
+                  </div>
+                  <span className="text-xs text-slate-400 block mt-0.5">
+                    Aferição oficial na altura da cicatriz umbilical
+                  </span>
+                </div>
+                <span className="text-xs text-slate-400 max-w-[150px] text-right">
+                  Panobianco Bariri • Ticket 1038
+                </span>
+              </div>
+
+              {/* Grid com circunferências iniciais */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                <div className="bg-slate-900/40 border border-slate-700/40 p-2.5 rounded-xl">
+                  <span className="text-[11px] font-semibold text-slate-400 block truncate">Tórax</span>
+                  <span className="text-lg font-bold text-white block mt-0.5">{formatBRNumber(initTorax, 1)} cm</span>
+                  <span className="text-[10px] text-slate-400">Tórax superior</span>
+                </div>
+
+                <div className="bg-slate-900/40 border border-slate-700/40 p-2.5 rounded-xl">
+                  <span className="text-[11px] font-semibold text-slate-400 block truncate">Cintura</span>
+                  <span className="text-lg font-bold text-white block mt-0.5">{formatBRNumber(initCintura, 1)} cm</span>
+                  <span className="text-[10px] text-slate-400">Menor curvatura</span>
+                </div>
+
+                <div className="bg-slate-900/40 border border-slate-700/40 p-2.5 rounded-xl">
+                  <span className="text-[11px] font-semibold text-slate-400 block truncate">Quadril</span>
+                  <span className="text-lg font-bold text-white block mt-0.5">{formatBRNumber(initQuadril, 1)} cm</span>
+                  <span className="text-[10px] text-slate-400">Maior projeção</span>
+                </div>
+
+                <div className="bg-slate-900/40 border border-slate-700/40 p-2.5 rounded-xl">
+                  <span className="text-[11px] font-semibold text-slate-400 block truncate">Braço (Dir / Esq)</span>
+                  <span className="text-lg font-bold text-white block mt-0.5">{formatBRNumber(initBracoDir, 1)} cm</span>
+                  <span className="text-[10px] text-slate-400">Dir: {formatBRNumber(initBracoDir, 1)} • Esq: {formatBRNumber(initBracoEsq, 1)}</span>
+                </div>
+
+                <div className="bg-slate-900/40 border border-slate-700/40 p-2.5 rounded-xl">
+                  <span className="text-[11px] font-semibold text-slate-400 block truncate">Coxa (Dir / Esq)</span>
+                  <span className="text-lg font-bold text-white block mt-0.5">{formatBRNumber(initCoxaDir, 1)} / {formatBRNumber(initCoxaEsq, 1)}</span>
+                  <span className="text-[10px] text-slate-400">Dir: {formatBRNumber(initCoxaDir, 1)} • Esq: {formatBRNumber(initCoxaEsq, 1)}</span>
+                </div>
+
+                <div className="bg-slate-900/40 border border-slate-700/40 p-2.5 rounded-xl">
+                  <span className="text-[11px] font-semibold text-slate-400 block truncate">Panturrilha</span>
+                  <span className="text-lg font-bold text-white block mt-0.5">{formatBRNumber(initPanturrilhaDir, 1)} cm</span>
+                  <span className="text-[10px] text-slate-400">Dir: {formatBRNumber(initPanturrilhaDir, 1)} • Esq: {formatBRNumber(initPanturrilhaEsq, 1)}</span>
+                </div>
+
+                <div className="bg-slate-900/40 border border-slate-700/40 p-2.5 rounded-xl col-span-2 sm:col-span-3">
+                  <span className="text-[11px] font-semibold text-slate-400 block truncate">Bioimpedância da Avaliação Panobianco</span>
+                  <div className="flex flex-wrap items-center gap-3 mt-1 text-sm">
+                    <span className="text-slate-300 font-bold">Peso: <strong className="text-white">{formatBRNumber(initPesoAval, 1)} kg</strong></span>
+                    <span className="text-slate-400">•</span>
+                    <span className="text-amber-400/90 font-bold">Gordura: <strong className="text-amber-300">{formatBRNumber(initGorduraAval, 1)}%</strong> ({formatBRNumber(firstMeasureRecord?.massaGordura || 45.1, 1)} kg)</span>
+                    <span className="text-slate-400">•</span>
+                    <span className="text-teal-400/90 font-bold">Massa Magra: <strong className="text-teal-300">{formatBRNumber(initMassaSemGorduraAval, 1)} kg</strong></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 2: Medidas Atuais & Variações */}
+          <div className="bg-slate-800/80 backdrop-blur border border-cyan-500/40 p-4 sm:p-5 rounded-2xl shadow-lg shadow-cyan-950/20 flex flex-col justify-between relative overflow-hidden">
+            <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div>
+              <div className="flex items-center justify-between pb-3 border-b border-slate-700/60 mb-4 relative z-10">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
+                    <Ruler className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
+                      Medidas Atuais & Variação
+                      <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                    </h3>
+                    <p className="text-[11px] text-slate-400">
+                      Evolução das circunferências corporais e perda de medidas
+                    </p>
+                  </div>
+                </div>
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                  {latestMeasureRecord?.data || '17/11/2026'}
+                </span>
+              </div>
+
+              {/* Featured Abdômen Atual com Variação Destacada */}
+              <div className="bg-slate-900/70 border border-cyan-500/40 p-4 rounded-xl flex items-center justify-between mb-4 relative z-10">
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-cyan-400">
+                    ABDÔMEN ATUAL
+                  </span>
+                  <div className="mt-1 flex items-baseline gap-1.5">
+                    <span className="text-3xl sm:text-4xl font-black text-cyan-300">
+                      {formatBRNumber(currAbdomen, 1)}
+                    </span>
+                    <span className="text-sm font-semibold text-cyan-400">cm</span>
+                  </div>
+                  <span className="text-xs text-slate-400 block mt-0.5">
+                    Circunferência abdominal mais recente
+                  </span>
+                </div>
+
+                {/* Variação em destaque */}
+                <div className="bg-cyan-500/15 border border-cyan-500/30 px-3.5 py-2 rounded-xl text-right">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-cyan-400 block">
+                    Variação Abdominal
+                  </span>
+                  <div className="flex items-center justify-end gap-1 mt-0.5">
+                    {diffAbdomen < 0 ? (
+                      <TrendingDown className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                    ) : diffAbdomen > 0 ? (
+                      <TrendingUp className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                    ) : null}
+                    <span className={`text-xl sm:text-2xl font-black ${diffAbdomen < 0 ? 'text-emerald-400' : diffAbdomen > 0 ? 'text-amber-400' : 'text-slate-200'}`}>
+                      {diffAbdomen > 0 ? `+${formatBRNumber(diffAbdomen, 1)}` : formatBRNumber(diffAbdomen, 1)}
+                    </span>
+                    <span className="text-xs text-cyan-300 font-semibold">cm</span>
+                  </div>
+                  <span className="text-[10px] text-cyan-300 font-medium block">
+                    {diffAbdomen < 0 ? 'Redução acumulada' : diffAbdomen === 0 ? 'Linha de base' : 'Aumento'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Grid com circunferências atuais e suas variações */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 relative z-10">
+                <div className="bg-slate-900/40 border border-slate-700/40 p-2.5 rounded-xl flex flex-col justify-between">
+                  <div>
+                    <span className="text-[11px] font-semibold text-slate-300 block truncate">Tórax Atual</span>
+                    <span className="text-lg font-bold text-white block mt-0.5">{formatBRNumber(currTorax, 1)} cm</span>
+                  </div>
+                  <div className="mt-2 pt-1 border-t border-slate-700/50 flex items-center justify-between text-[11px]">
+                    <span className="text-slate-400">Variação</span>
+                    <span className={`font-bold flex items-center gap-0.5 ${diffTorax < 0 ? 'text-emerald-400' : diffTorax > 0 ? 'text-amber-400' : 'text-slate-400'}`}>
+                      {diffTorax < 0 ? <TrendingDown className="w-3 h-3" /> : diffTorax > 0 ? <TrendingUp className="w-3 h-3" /> : null}
+                      {diffTorax > 0 ? `+${formatBRNumber(diffTorax, 1)} cm` : `${formatBRNumber(diffTorax, 1)} cm`}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-slate-900/40 border border-slate-700/40 p-2.5 rounded-xl flex flex-col justify-between">
+                  <div>
+                    <span className="text-[11px] font-semibold text-slate-300 block truncate">Cintura Atual</span>
+                    <span className="text-lg font-bold text-white block mt-0.5">{formatBRNumber(currCintura, 1)} cm</span>
+                  </div>
+                  <div className="mt-2 pt-1 border-t border-slate-700/50 flex items-center justify-between text-[11px]">
+                    <span className="text-slate-400">Variação</span>
+                    <span className={`font-bold flex items-center gap-0.5 ${diffCintura < 0 ? 'text-emerald-400' : diffCintura > 0 ? 'text-amber-400' : 'text-slate-400'}`}>
+                      {diffCintura < 0 ? <TrendingDown className="w-3 h-3" /> : diffCintura > 0 ? <TrendingUp className="w-3 h-3" /> : null}
+                      {diffCintura > 0 ? `+${formatBRNumber(diffCintura, 1)} cm` : `${formatBRNumber(diffCintura, 1)} cm`}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-slate-900/40 border border-slate-700/40 p-2.5 rounded-xl flex flex-col justify-between">
+                  <div>
+                    <span className="text-[11px] font-semibold text-slate-300 block truncate">Quadril Atual</span>
+                    <span className="text-lg font-bold text-white block mt-0.5">{formatBRNumber(currQuadril, 1)} cm</span>
+                  </div>
+                  <div className="mt-2 pt-1 border-t border-slate-700/50 flex items-center justify-between text-[11px]">
+                    <span className="text-slate-400">Variação</span>
+                    <span className={`font-bold flex items-center gap-0.5 ${diffQuadril < 0 ? 'text-emerald-400' : diffQuadril > 0 ? 'text-amber-400' : 'text-slate-400'}`}>
+                      {diffQuadril < 0 ? <TrendingDown className="w-3 h-3" /> : diffQuadril > 0 ? <TrendingUp className="w-3 h-3" /> : null}
+                      {diffQuadril > 0 ? `+${formatBRNumber(diffQuadril, 1)} cm` : `${formatBRNumber(diffQuadril, 1)} cm`}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-slate-900/40 border border-slate-700/40 p-2.5 rounded-xl flex flex-col justify-between">
+                  <div>
+                    <span className="text-[11px] font-semibold text-slate-300 block truncate">Braço Atual (D/E)</span>
+                    <span className="text-lg font-bold text-white block mt-0.5">{formatBRNumber(currBracoDir, 1)} / {formatBRNumber(currBracoEsq, 1)} cm</span>
+                  </div>
+                  <div className="mt-2 pt-1 border-t border-slate-700/50 flex items-center justify-between text-[11px]">
+                    <span className="text-slate-400">Variação Dir</span>
+                    <span className={`font-bold flex items-center gap-0.5 ${diffBracoDir < 0 ? 'text-emerald-400' : diffBracoDir > 0 ? 'text-cyan-400' : 'text-slate-400'}`}>
+                      {diffBracoDir > 0 ? `+${formatBRNumber(diffBracoDir, 1)} cm` : `${formatBRNumber(diffBracoDir, 1)} cm`}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-slate-900/40 border border-slate-700/40 p-2.5 rounded-xl flex flex-col justify-between">
+                  <div>
+                    <span className="text-[11px] font-semibold text-slate-300 block truncate">Coxa Atual (D/E)</span>
+                    <span className="text-lg font-bold text-white block mt-0.5">{formatBRNumber(currCoxaDir, 1)} / {formatBRNumber(currCoxaEsq, 1)}</span>
+                  </div>
+                  <div className="mt-2 pt-1 border-t border-slate-700/50 flex items-center justify-between text-[11px]">
+                    <span className="text-slate-400">Variação Dir</span>
+                    <span className={`font-bold flex items-center gap-0.5 ${diffCoxaDir < 0 ? 'text-emerald-400' : diffCoxaDir > 0 ? 'text-amber-400' : 'text-slate-400'}`}>
+                      {diffCoxaDir < 0 ? <TrendingDown className="w-3 h-3" /> : diffCoxaDir > 0 ? <TrendingUp className="w-3 h-3" /> : null}
+                      {diffCoxaDir > 0 ? `+${formatBRNumber(diffCoxaDir, 1)} cm` : `${formatBRNumber(diffCoxaDir, 1)} cm`}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-slate-900/40 border border-slate-700/40 p-2.5 rounded-xl flex flex-col justify-between">
+                  <div>
+                    <span className="text-[11px] font-semibold text-slate-300 block truncate">Panturrilha Atual (D/E)</span>
+                    <span className="text-lg font-bold text-white block mt-0.5">{formatBRNumber(currPanturrilhaDir, 1)} / {formatBRNumber(currPanturrilhaEsq, 1)} cm</span>
+                  </div>
+                  <div className="mt-2 pt-1 border-t border-slate-700/50 flex items-center justify-between text-[11px]">
+                    <span className="text-slate-400">Variação Dir</span>
+                    <span className={`font-bold flex items-center gap-0.5 ${diffPanturrilhaDir < 0 ? 'text-emerald-400' : diffPanturrilhaDir > 0 ? 'text-amber-400' : 'text-slate-400'}`}>
+                      {diffPanturrilhaDir < 0 ? <TrendingDown className="w-3 h-3" /> : diffPanturrilhaDir > 0 ? <TrendingUp className="w-3 h-3" /> : null}
+                      {diffPanturrilhaDir > 0 ? `+${formatBRNumber(diffPanturrilhaDir, 1)} cm` : `${formatBRNumber(diffPanturrilhaDir, 1)} cm`}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-slate-900/40 border border-cyan-500/30 p-2.5 rounded-xl col-span-2 sm:col-span-3 flex flex-col justify-between">
+                  <div>
+                    <span className="text-[11px] font-semibold text-cyan-400 block truncate">Bioimpedância da Avaliação Panobianco</span>
+                    <div className="flex flex-wrap items-center gap-3 mt-1 text-sm">
+                      <span className="text-slate-300 font-bold">Peso: <strong className="text-white">{formatBRNumber(currPesoAval, 1)} kg</strong></span>
+                      <span className="text-slate-400">•</span>
+                      <span className="text-amber-400/90 font-bold">Gordura: <strong className="text-amber-300">{formatBRNumber(currGorduraAval, 1)}%</strong> ({formatBRNumber(latestMeasureRecord?.massaGordura || 45.1, 1)} kg)</span>
+                      <span className="text-slate-400">•</span>
+                      <span className="text-teal-400/90 font-bold">Massa Magra: <strong className="text-teal-300">{formatBRNumber(currMassaSemGorduraAval, 1)} kg</strong></span>
+                    </div>
+                  </div>
+                  <div className="mt-2 pt-1 border-t border-slate-700/50 flex items-center justify-between text-[11px]">
+                    <span className="text-slate-400">Evolução da Avaliação Física</span>
+                    <span className={`font-bold ${diffPesoAval < 0 ? 'text-emerald-400' : diffPesoAval > 0 ? 'text-amber-400' : 'text-slate-400'}`}>
+                      {diffPesoAval === 0 ? 'Linha de base estabelecida (Panobianco)' : `${diffPesoAval > 0 ? `+${diffPesoAval}` : diffPesoAval} kg na balança da academia`}
                     </span>
                   </div>
                 </div>

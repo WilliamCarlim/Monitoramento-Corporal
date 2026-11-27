@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   TrendingDown,
   TrendingUp,
@@ -10,6 +10,7 @@ import {
   Flame,
   Calendar,
   Activity,
+  Layers,
 } from 'lucide-react';
 import {
   LineChart,
@@ -29,6 +30,7 @@ import {
   calculateIMC,
   parseDurationToHours,
   estimateGymCalories,
+  cleanDurationString,
 } from '../utils/formatters';
 import { NavTab } from './Navbar';
 
@@ -60,6 +62,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
   profile,
   onNavigate,
 }) => {
+  const [historyTab, setHistoryTab] = useState<'all' | 'weights' | 'cardios' | 'workouts' | 'measures'>('all');
+  const [unifiedLimit, setUnifiedLimit] = useState<number>(25);
+
   const latestWeight = weights.length > 0 ? weights[weights.length - 1] : null;
   const firstWeightRecord = weights.length > 0 ? weights[0] : null;
   const initialWeight = firstWeightRecord?.peso || profile.pesoInicial || 113.250;
@@ -188,6 +193,94 @@ export const Dashboard: React.FC<DashboardProps> = ({
     if (isNaN(d) || isNaN(m) || isNaN(y)) return null;
     return new Date(y, m, d);
   };
+
+  // Preparação de feed unificado (Tudo Junto) combinando pesagens, cardios, musculação e medidas
+  const unifiedHistory = useMemo(() => {
+    const list: Array<{
+      id: string;
+      type: 'weight' | 'cardio' | 'workout' | 'measure';
+      typeLabel: string;
+      data: string;
+      dateObj: Date | null;
+      contexto: string;
+      destaquePrincipal: string;
+      detalhes: string;
+      extraInfo: string;
+    }> = [];
+
+    weights.forEach((w, idx) => {
+      const dObj = parseBRDate(w.data);
+      const varTxt =
+        w.variacaoAnterior === undefined || w.variacaoAnterior === 0
+          ? '0,000 kg'
+          : w.variacaoAnterior > 0
+          ? `+${formatBRNumber(w.variacaoAnterior, 3)} kg`
+          : `${formatBRNumber(w.variacaoAnterior, 3)} kg`;
+
+      list.push({
+        id: w.id || `w-${idx}`,
+        type: 'weight',
+        typeLabel: 'Pesagem',
+        data: w.data,
+        dateObj: dObj,
+        contexto: w.contexto || 'Pesagem matinal',
+        destaquePrincipal: `${formatBRNumber(w.peso, 3)} kg`,
+        detalhes: `Var: ${varTxt} • IMC: ${formatBRNumber(w.imc || 0, 2)} • Gordura: ${w.gorduraPercent ? `${formatBRNumber(w.gorduraPercent, 1)}%` : '-'} • M. Musc: ${w.massaMuscularPercent ? `${formatBRNumber(w.massaMuscularPercent, 1)}%` : '-'}`,
+        extraInfo: w.metabolismo ? `${formatBRNumber(w.metabolismo, 0)} kcal basal` : w.observacoes || '-',
+      });
+    });
+
+    cardios.forEach((c, idx) => {
+      const dObj = parseBRDate(c.data);
+      list.push({
+        id: c.id || `c-${idx}`,
+        type: 'cardio',
+        typeLabel: `Cardio • ${c.modalidade || 'Caminhada'}`,
+        data: c.data,
+        dateObj: dObj,
+        contexto: c.contexto || c.diaSemana || 'Cardio Strava',
+        destaquePrincipal: `${formatBRNumber(c.distanciaKm, 2)} km`,
+        detalhes: `Tempo: ${cleanDurationString(c.tempoMovimento)}${c.passos ? ` • ${c.passos.toLocaleString('pt-BR')} passos` : ''}${c.elevacaoM ? ` • ${c.elevacaoM}m elev.` : ''}`,
+        extraInfo: c.calorias ? `${c.calorias.toLocaleString('pt-BR')} kcal` : c.observacoes || '-',
+      });
+    });
+
+    workouts.forEach((wk, idx) => {
+      const dObj = parseBRDate(wk.data);
+      list.push({
+        id: wk.id || `wk-${idx}`,
+        type: 'workout',
+        typeLabel: 'Musculação',
+        data: wk.data,
+        dateObj: dObj,
+        contexto: wk.contexto || wk.diaSemana || 'Treino Academia',
+        destaquePrincipal: wk.focoDivisao || 'Musculação',
+        detalhes: `Duração: ${wk.duracaoMin ? `${wk.duracaoMin} min` : '-'} ${wk.exerciciosCargas ? `• ${wk.exerciciosCargas}` : ''}`,
+        extraInfo: wk.calorias ? `${wk.calorias.toLocaleString('pt-BR')} kcal` : wk.observacoes || '-',
+      });
+    });
+
+    measures.forEach((m, idx) => {
+      const dObj = parseBRDate(m.data);
+      list.push({
+        id: m.id || `m-${idx}`,
+        type: 'measure',
+        typeLabel: 'Medidas',
+        data: m.data,
+        dateObj: dObj,
+        contexto: 'Avaliação Panobianco',
+        destaquePrincipal: `Abdômen: ${formatBRNumber(m.abdomen || 125, 1)} cm`,
+        detalhes: `Tórax: ${formatBRNumber(m.torax || 117, 1)} • Cintura: ${formatBRNumber(m.cintura || 117, 1)} • Quadril: ${formatBRNumber(m.quadril || 123, 1)} • Braço: ${formatBRNumber(m.bracoDir || 35, 1)}/${formatBRNumber(m.bracoEsq || 35, 1)}`,
+        extraInfo: m.pesoAvaliacao ? `Avaliação: ${formatBRNumber(m.pesoAvaliacao, 1)} kg (${formatBRNumber(m.gorduraAvaliacao || 40.3, 1)}%)` : m.observacoes || '-',
+      });
+    });
+
+    return list.sort((a, b) => {
+      const tA = a.dateObj ? a.dateObj.getTime() : 0;
+      const tB = b.dateObj ? b.dateObj.getTime() : 0;
+      return tB - tA;
+    });
+  }, [weights, cardios, workouts, measures]);
 
   // Helper para verificar se duas datas pertencem à mesma semana (Segunda-feira a Domingo)
   const isSameWeekMondayToSunday = (d1: Date, d2: Date): boolean => {
@@ -1590,67 +1683,427 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </div>
 
-      {/* Recent History Overview */}
-      <div className="bg-slate-800/60 backdrop-blur border border-slate-700/60 rounded-2xl p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-semibold text-white flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-emerald-400" />
-            Últimos Registros Salvos na Planilha
-          </h3>
+      {/* Recent History Overview com Visão Unificada e Abas Separadas (Últimos 10) */}
+      <div className="bg-slate-800/60 backdrop-blur border border-slate-700/60 rounded-2xl p-4 sm:p-5 shadow-lg">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-700/60">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+              <Calendar className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                Últimos Registros Salvos na Planilha
+              </h3>
+              <p className="text-xs text-slate-400">
+                Histórico recente consolidado em tempo real das 5 abas da planilha
+              </p>
+            </div>
+          </div>
+
           <button
             onClick={() => onNavigate('history')}
-            className="text-xs text-emerald-400 hover:text-emerald-300 font-medium flex items-center gap-1 cursor-pointer"
+            className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 transition-all cursor-pointer self-start sm:self-auto"
           >
-            Ver histórico completo das 5 abas <ArrowRight className="w-3 h-3" />
+            Ver histórico completo das 5 abas <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-300">
-            <thead className="text-xs uppercase bg-slate-900/80 text-slate-400 border-b border-slate-700">
-              <tr>
-                <th className="py-2.5 px-3">Data</th>
-                <th className="py-2.5 px-3">Horário / Contexto</th>
-                <th className="py-2.5 px-3">Peso</th>
-                <th className="py-2.5 px-3">Var. Anterior</th>
-                <th className="py-2.5 px-3">IMC</th>
-                <th className="py-2.5 px-3">Gordura (%)</th>
-                <th className="py-2.5 px-3">Massa Musc. (%)</th>
-                <th className="py-2.5 px-3">Visceral</th>
-                <th className="py-2.5 px-3">Metabolismo</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800">
-              {weights.slice(-5).reverse().map((r, i) => (
-                <tr key={r.id || i} className="hover:bg-slate-800/40 transition">
-                  <td className="py-2.5 px-3 font-medium text-white">{r.data}</td>
-                  <td className="py-2.5 px-3 text-xs text-slate-400">
-                    <span className="px-2 py-0.5 rounded-full bg-slate-700/80 text-slate-200">
-                      {r.contexto}
-                    </span>
-                  </td>
-                  <td className="py-2.5 px-3 font-bold text-emerald-400">
-                    {formatBRNumber(r.peso, 3)} kg
-                  </td>
-                  <td className="py-2.5 px-3">
-                    {r.variacaoAnterior === undefined || r.variacaoAnterior === 0 ? (
-                      <span className="text-slate-500">0,000 kg</span>
-                    ) : r.variacaoAnterior > 0 ? (
-                      <span className="text-rose-400 font-medium">+{formatBRNumber(r.variacaoAnterior, 3)} kg</span>
-                    ) : (
-                      <span className="text-emerald-400 font-medium">{formatBRNumber(r.variacaoAnterior, 3)} kg</span>
-                    )}
-                  </td>
-                  <td className="py-2.5 px-3 text-slate-300">{r.imc ? formatBRNumber(r.imc, 2) : '-'}</td>
-                  <td className="py-2.5 px-3 text-amber-300 font-medium">{r.gorduraPercent ? `${formatBRNumber(r.gorduraPercent, 1)}%` : '-'}</td>
-                  <td className="py-2.5 px-3 text-teal-300 font-medium">{r.massaMuscularPercent ? `${formatBRNumber(r.massaMuscularPercent, 1)}%` : '-'}</td>
-                  <td className="py-2.5 px-3 text-rose-300">{r.gorduraVisceral ? formatBRNumber(r.gorduraVisceral, 1) : '-'}</td>
-                  <td className="py-2.5 px-3 text-purple-300">{r.metabolismo ? `${formatBRNumber(r.metabolismo, 0)} kcal` : '-'}</td>
-                </tr>
+        {/* Seletor de visualização (Pills / Abas) */}
+        <div className="flex flex-wrap items-center justify-between gap-2.5 mb-4">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            <button
+              onClick={() => setHistoryTab('all')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                historyTab === 'all'
+                  ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
+                  : 'bg-slate-900/60 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-700/60'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              Tudo Junto ({Math.min(unifiedLimit, unifiedHistory.length)})
+            </button>
+
+            <button
+              onClick={() => setHistoryTab('weights')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                historyTab === 'weights'
+                  ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
+                  : 'bg-slate-900/60 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-700/60'
+              }`}
+            >
+              <Scale className="w-3.5 h-3.5 text-emerald-400" />
+              Pesagens ({Math.min(10, weights.length)})
+            </button>
+
+            <button
+              onClick={() => setHistoryTab('cardios')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                historyTab === 'cardios'
+                  ? 'bg-sky-500 text-slate-950 shadow-md shadow-sky-500/20'
+                  : 'bg-slate-900/60 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-700/60'
+              }`}
+            >
+              <HeartPulse className="w-3.5 h-3.5 text-sky-400" />
+              Cardio Strava ({Math.min(10, cardios.length)})
+            </button>
+
+            <button
+              onClick={() => setHistoryTab('workouts')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                historyTab === 'workouts'
+                  ? 'bg-indigo-500 text-slate-950 shadow-md shadow-indigo-500/20'
+                  : 'bg-slate-900/60 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-700/60'
+              }`}
+            >
+              <Dumbbell className="w-3.5 h-3.5 text-indigo-400" />
+              Academia ({Math.min(10, workouts.length)})
+            </button>
+
+            <button
+              onClick={() => setHistoryTab('measures')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                historyTab === 'measures'
+                  ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
+                  : 'bg-slate-900/60 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-700/60'
+              }`}
+            >
+              <Ruler className="w-3.5 h-3.5 text-cyan-400" />
+              Medidas ({measures.length})
+            </button>
+          </div>
+
+          {/* Seletor de quantidade quando em Tudo Junto */}
+          {historyTab === 'all' && (
+            <div className="flex items-center gap-1.5 text-xs text-slate-400 bg-slate-900/80 px-2.5 py-1 rounded-xl border border-slate-700/50">
+              <span className="text-[11px] font-medium">Exibir:</span>
+              {[15, 25, 50].map((lim) => (
+                <button
+                  key={lim}
+                  onClick={() => setUnifiedLimit(lim)}
+                  className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition-colors ${
+                    unifiedLimit === lim
+                      ? 'bg-emerald-500 text-slate-950'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {lim}
+                </button>
               ))}
-            </tbody>
-          </table>
+              <button
+                onClick={() => setUnifiedLimit(unifiedHistory.length || 100)}
+                className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition-colors ${
+                  unifiedLimit >= (unifiedHistory.length || 100)
+                    ? 'bg-emerald-500 text-slate-950'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Todos
+              </button>
+            </div>
+          )}
         </div>
+
+        {/* 1. TAB: TUDO JUNTO (FEED CRONOLÓGICO UNIFICADO) */}
+        {historyTab === 'all' && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs sm:text-sm text-slate-300">
+              <thead className="text-[11px] uppercase bg-slate-900/90 text-slate-400 border-b border-slate-700 whitespace-nowrap">
+                <tr>
+                  <th className="py-2.5 px-3">Tipo / Origem</th>
+                  <th className="py-2.5 px-3">Data</th>
+                  <th className="py-2.5 px-3">Horário / Contexto</th>
+                  <th className="py-2.5 px-3">Atividade / Métrica Principal</th>
+                  <th className="py-2.5 px-3">Detalhes Biométricos & Cargas</th>
+                  <th className="py-2.5 px-3">Gasto / Calorias / Obs</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800 whitespace-nowrap">
+                {unifiedHistory.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-slate-500">
+                      Nenhum registro encontrado ainda.
+                    </td>
+                  </tr>
+                ) : (
+                  unifiedHistory.slice(0, unifiedLimit).map((item, idx) => (
+                    <tr key={item.id || idx} className="hover:bg-slate-800/40 transition">
+                      <td className="py-2.5 px-3">
+                        {item.type === 'weight' && (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                            <Scale className="w-3 h-3" />
+                            Pesagem
+                          </span>
+                        )}
+                        {item.type === 'cardio' && (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-sky-500/15 text-sky-400 border border-sky-500/30">
+                            <HeartPulse className="w-3 h-3" />
+                            {item.typeLabel}
+                          </span>
+                        )}
+                        {item.type === 'workout' && (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-500/15 text-indigo-400 border border-indigo-500/30">
+                            <Dumbbell className="w-3 h-3" />
+                            Musculação
+                          </span>
+                        )}
+                        {item.type === 'measure' && (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-cyan-500/15 text-cyan-400 border border-cyan-500/30">
+                            <Ruler className="w-3 h-3" />
+                            Medidas
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-2.5 px-3 font-semibold text-white">{item.data}</td>
+                      <td className="py-2.5 px-3 text-xs text-slate-400">
+                        <span className="px-2 py-0.5 rounded-md bg-slate-900/60 border border-slate-800 text-slate-300">
+                          {item.contexto}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 font-bold">
+                        {item.type === 'weight' && (
+                          <span className="text-emerald-400">{item.destaquePrincipal}</span>
+                        )}
+                        {item.type === 'cardio' && (
+                          <span className="text-sky-300">{item.destaquePrincipal}</span>
+                        )}
+                        {item.type === 'workout' && (
+                          <span className="text-indigo-300">{item.destaquePrincipal}</span>
+                        )}
+                        {item.type === 'measure' && (
+                          <span className="text-cyan-300">{item.destaquePrincipal}</span>
+                        )}
+                      </td>
+                      <td className="py-2.5 px-3 text-xs text-slate-300">
+                        {item.detalhes}
+                      </td>
+                      <td className="py-2.5 px-3 text-xs text-amber-300/90 font-medium max-w-xs truncate" title={item.extraInfo}>
+                        {item.extraInfo}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* 2. TAB: PESAGENS (ÚLTIMOS 10 REGISTROS) */}
+        {historyTab === 'weights' && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs sm:text-sm text-slate-300">
+              <thead className="text-[11px] uppercase bg-slate-900/90 text-slate-400 border-b border-slate-700 whitespace-nowrap">
+                <tr>
+                  <th className="py-2.5 px-3">Data</th>
+                  <th className="py-2.5 px-3">Horário / Contexto</th>
+                  <th className="py-2.5 px-3 text-emerald-400 font-bold">Peso</th>
+                  <th className="py-2.5 px-3">Var. Anterior</th>
+                  <th className="py-2.5 px-3">Var. Inicial</th>
+                  <th className="py-2.5 px-3">IMC</th>
+                  <th className="py-2.5 px-3 text-amber-400">Gordura (%)</th>
+                  <th className="py-2.5 px-3 text-teal-400">Massa Musc. (%)</th>
+                  <th className="py-2.5 px-3 text-rose-400">Visceral</th>
+                  <th className="py-2.5 px-3 text-purple-400">Metabolismo</th>
+                  <th className="py-2.5 px-3">Observações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800 whitespace-nowrap">
+                {weights.length === 0 ? (
+                  <tr>
+                    <td colSpan={11} className="py-8 text-center text-slate-500">
+                      Nenhum registro de pesagem encontrado.
+                    </td>
+                  </tr>
+                ) : (
+                  weights.slice(-10).reverse().map((r, i) => (
+                    <tr key={r.id || i} className="hover:bg-slate-800/40 transition">
+                      <td className="py-2.5 px-3 font-semibold text-white">{r.data}</td>
+                      <td className="py-2.5 px-3 text-xs text-slate-400">
+                        <span className="px-2 py-0.5 rounded-full bg-slate-700/80 text-slate-200">
+                          {r.contexto}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 font-bold text-emerald-400">
+                        {formatBRNumber(r.peso, 3)} kg
+                      </td>
+                      <td className="py-2.5 px-3">
+                        {r.variacaoAnterior === undefined || r.variacaoAnterior === 0 ? (
+                          <span className="text-slate-500">0,000 kg</span>
+                        ) : r.variacaoAnterior > 0 ? (
+                          <span className="text-rose-400 font-medium">+{formatBRNumber(r.variacaoAnterior, 3)} kg</span>
+                        ) : (
+                          <span className="text-emerald-400 font-medium">{formatBRNumber(r.variacaoAnterior, 3)} kg</span>
+                        )}
+                      </td>
+                      <td className="py-2.5 px-3">
+                        {r.variacaoInicial === undefined || r.variacaoInicial === 0 ? (
+                          <span className="text-slate-500">0,000 kg</span>
+                        ) : r.variacaoInicial > 0 ? (
+                          <span className="text-rose-400 font-medium">+{formatBRNumber(r.variacaoInicial, 3)} kg</span>
+                        ) : (
+                          <span className="text-emerald-400 font-medium">{formatBRNumber(r.variacaoInicial, 3)} kg</span>
+                        )}
+                      </td>
+                      <td className="py-2.5 px-3 text-slate-300 font-medium">{r.imc ? formatBRNumber(r.imc, 2) : '-'}</td>
+                      <td className="py-2.5 px-3 text-amber-300 font-semibold">{r.gorduraPercent ? `${formatBRNumber(r.gorduraPercent, 1)}%` : '-'}</td>
+                      <td className="py-2.5 px-3 text-teal-300 font-semibold">{r.massaMuscularPercent ? `${formatBRNumber(r.massaMuscularPercent, 1)}%` : '-'}</td>
+                      <td className="py-2.5 px-3 text-rose-300">{r.gorduraVisceral ? formatBRNumber(r.gorduraVisceral, 1) : '-'}</td>
+                      <td className="py-2.5 px-3 text-purple-300 font-medium">{r.metabolismo ? `${formatBRNumber(r.metabolismo, 0)} kcal` : '-'}</td>
+                      <td className="py-2.5 px-3 text-xs text-slate-400 max-w-xs truncate" title={r.observacoes}>{r.observacoes || '-'}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* 3. TAB: CARDIO STRAVA (ÚLTIMOS 10 REGISTROS) */}
+        {historyTab === 'cardios' && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs sm:text-sm text-slate-300">
+              <thead className="text-[11px] uppercase bg-slate-900/90 text-slate-400 border-b border-slate-700 whitespace-nowrap">
+                <tr>
+                  <th className="py-2.5 px-3">Data</th>
+                  <th className="py-2.5 px-3">Horário / Contexto</th>
+                  <th className="py-2.5 px-3 text-sky-400 font-bold">Modalidade</th>
+                  <th className="py-2.5 px-3 text-sky-300 font-bold">Distância</th>
+                  <th className="py-2.5 px-3">Tempo Movimento</th>
+                  <th className="py-2.5 px-3">Passos</th>
+                  <th className="py-2.5 px-3">Elevação</th>
+                  <th className="py-2.5 px-3 text-amber-400 font-bold">Gasto Estimado</th>
+                  <th className="py-2.5 px-3">Local / Obs</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800 whitespace-nowrap">
+                {cardios.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className="py-8 text-center text-slate-500">
+                      Nenhuma atividade aeróbica registrada ainda.
+                    </td>
+                  </tr>
+                ) : (
+                  cardios.slice(-10).reverse().map((c, i) => (
+                    <tr key={c.id || i} className="hover:bg-slate-800/40 transition">
+                      <td className="py-2.5 px-3 font-semibold text-white">{c.data}</td>
+                      <td className="py-2.5 px-3 text-xs text-slate-400">
+                        <span className="px-2 py-0.5 rounded-md bg-slate-900/60 border border-slate-800 text-slate-300">
+                          {c.contexto || c.diaSemana}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 font-bold text-sky-400">
+                        <span className="px-2 py-0.5 rounded-full bg-sky-950 text-sky-300 border border-sky-800 text-xs">
+                          {c.modalidade || 'Caminhada'}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 font-bold text-sky-300">{formatBRNumber(c.distanciaKm, 2)} km</td>
+                      <td className="py-2.5 px-3 font-mono">{cleanDurationString(c.tempoMovimento)}</td>
+                      <td className="py-2.5 px-3">{c.passos ? c.passos.toLocaleString('pt-BR') : '-'}</td>
+                      <td className="py-2.5 px-3">{c.elevacaoM ? `${c.elevacaoM} m` : '-'}</td>
+                      <td className="py-2.5 px-3 font-black text-amber-300">{c.calorias ? `${c.calorias.toLocaleString('pt-BR')} kcal` : '-'}</td>
+                      <td className="py-2.5 px-3 text-xs text-slate-400 max-w-xs truncate" title={c.observacoes || c.local}>{c.local || c.observacoes || '-'}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* 4. TAB: ACADEMIA / MUSCULAÇÃO (ÚLTIMOS 10 REGISTROS) */}
+        {historyTab === 'workouts' && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs sm:text-sm text-slate-300">
+              <thead className="text-[11px] uppercase bg-slate-900/90 text-slate-400 border-b border-slate-700 whitespace-nowrap">
+                <tr>
+                  <th className="py-2.5 px-3">Data</th>
+                  <th className="py-2.5 px-3">Horário / Contexto</th>
+                  <th className="py-2.5 px-3 text-indigo-400 font-bold">Foco / Divisão Muscular</th>
+                  <th className="py-2.5 px-3">Duração</th>
+                  <th className="py-2.5 px-3 text-amber-400 font-bold">Gasto Estimado</th>
+                  <th className="py-2.5 px-3">Exercícios / Cargas</th>
+                  <th className="py-2.5 px-3">Observações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800 whitespace-nowrap">
+                {workouts.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-8 text-center text-slate-500">
+                      Nenhum treino de academia registrado ainda.
+                    </td>
+                  </tr>
+                ) : (
+                  workouts.slice(-10).reverse().map((w, i) => (
+                    <tr key={w.id || i} className="hover:bg-slate-800/40 transition">
+                      <td className="py-2.5 px-3 font-semibold text-white">{w.data}</td>
+                      <td className="py-2.5 px-3 text-xs text-slate-400">
+                        <span className="px-2 py-0.5 rounded-md bg-slate-900/60 border border-slate-800 text-slate-300">
+                          {w.contexto || w.diaSemana}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 font-bold text-indigo-300">
+                        <span className="px-2 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-800 text-xs">
+                          {w.focoDivisao}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 font-semibold text-white">{w.duracaoMin ? `${w.duracaoMin} min` : '-'}</td>
+                      <td className="py-2.5 px-3 font-black text-amber-300">{w.calorias ? `${w.calorias.toLocaleString('pt-BR')} kcal` : '-'}</td>
+                      <td className="py-2.5 px-3 text-xs text-slate-300 max-w-sm truncate" title={w.exerciciosCargas}>{w.exerciciosCargas || '-'}</td>
+                      <td className="py-2.5 px-3 text-xs text-slate-400 max-w-xs truncate" title={w.observacoes}>{w.observacoes || '-'}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* 5. TAB: MEDIDAS CORPORAIS */}
+        {historyTab === 'measures' && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs sm:text-sm text-slate-300">
+              <thead className="text-[11px] uppercase bg-slate-900/90 text-slate-400 border-b border-slate-700 whitespace-nowrap">
+                <tr>
+                  <th className="py-2.5 px-3">Data</th>
+                  <th className="py-2.5 px-3 text-cyan-400 font-bold">Abdômen</th>
+                  <th className="py-2.5 px-3">Cintura</th>
+                  <th className="py-2.5 px-3">Quadril</th>
+                  <th className="py-2.5 px-3">Tórax</th>
+                  <th className="py-2.5 px-3">Braço (D / E)</th>
+                  <th className="py-2.5 px-3">Coxa (D / E)</th>
+                  <th className="py-2.5 px-3">Panturrilha (D / E)</th>
+                  <th className="py-2.5 px-3 text-emerald-400 font-bold">Avaliação Panobianco</th>
+                  <th className="py-2.5 px-3">Observações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800 whitespace-nowrap">
+                {measures.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} className="py-8 text-center text-slate-500">
+                      Nenhuma aferição de medidas corporais registrada.
+                    </td>
+                  </tr>
+                ) : (
+                  measures.slice(-10).reverse().map((m, i) => (
+                    <tr key={m.id || i} className="hover:bg-slate-800/40 transition">
+                      <td className="py-2.5 px-3 font-semibold text-white">{m.data}</td>
+                      <td className="py-2.5 px-3 font-bold text-cyan-300">{formatBRNumber(m.abdomen, 1)} cm</td>
+                      <td className="py-2.5 px-3">{m.cintura ? `${formatBRNumber(m.cintura, 1)} cm` : '-'}</td>
+                      <td className="py-2.5 px-3">{m.quadril ? `${formatBRNumber(m.quadril, 1)} cm` : '-'}</td>
+                      <td className="py-2.5 px-3">{m.torax ? `${formatBRNumber(m.torax, 1)} cm` : '-'}</td>
+                      <td className="py-2.5 px-3">{m.bracoDir ? `${formatBRNumber(m.bracoDir, 1)} / ${formatBRNumber(m.bracoEsq, 1)} cm` : '-'}</td>
+                      <td className="py-2.5 px-3">{m.coxaDir ? `${formatBRNumber(m.coxaDir, 1)} / ${formatBRNumber(m.coxaEsq, 1)} cm` : '-'}</td>
+                      <td className="py-2.5 px-3">{m.panturrilhaDir ? `${formatBRNumber(m.panturrilhaDir, 1)} / ${formatBRNumber(m.panturrilhaEsq, 1)} cm` : '-'}</td>
+                      <td className="py-2.5 px-3 font-semibold text-emerald-400">
+                        {m.pesoAvaliacao ? `${formatBRNumber(m.pesoAvaliacao, 1)} kg (${formatBRNumber(m.gorduraAvaliacao || 40.3, 1)}%)` : '-'}
+                      </td>
+                      <td className="py-2.5 px-3 text-xs text-slate-400 max-w-xs truncate" title={m.observacoes}>{m.observacoes || '-'}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

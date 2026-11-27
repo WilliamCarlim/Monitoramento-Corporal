@@ -19,7 +19,7 @@ export const INITIAL_WEIGHT_RECORDS: WeightRecord[] = [
     peso: 113.250,
     variacaoAnterior: 0.000,
     variacaoInicial: 0.000,
-    imc: 34.95,
+    imc: 36.56,
     gorduraPercent: 35.6,
     pesoGordura: 40.3,
     massaMuscEsqPercent: 32.3,
@@ -44,7 +44,7 @@ export const INITIAL_WEIGHT_RECORDS: WeightRecord[] = [
     peso: 111.750,
     variacaoAnterior: -1.500,
     variacaoInicial: -1.500,
-    imc: 34.49,
+    imc: 36.08,
     gorduraPercent: 35.2,
     pesoGordura: 39.4,
     massaMuscEsqPercent: 32.5,
@@ -287,7 +287,18 @@ export function getStoredWeights(): WeightRecord[] {
       saveStoredWeights(INITIAL_WEIGHT_RECORDS);
       return INITIAL_WEIGHT_RECORDS;
     }
-    return JSON.parse(raw);
+    const parsed: WeightRecord[] = JSON.parse(raw);
+    const profile = getStoredProfile();
+    const h = profile.alturaMetros || 1.76;
+    return parsed.map((w) => {
+      if (w.peso && (!w.imc || (w.imc < 35.5 && w.peso > 110))) {
+        return {
+          ...w,
+          imc: Number((w.peso / (h * h)).toFixed(2)),
+        };
+      }
+      return w;
+    });
   } catch {
     return INITIAL_WEIGHT_RECORDS;
   }

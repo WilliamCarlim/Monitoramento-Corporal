@@ -89,7 +89,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const initPeso = firstWeightRecord?.peso ?? (profile.pesoInicial || 113.250);
   const diffPeso = Number((currentWeight - initPeso).toFixed(3));
 
-  const initImc = firstWeightRecord?.imcApp ?? (firstWeightRecord?.peso ? Number((firstWeightRecord.peso / (userAltura * userAltura)).toFixed(2)) : 36.56);
+  const initImcInfo = calculateIMC(initPeso, userAltura);
+  const initImc = initImcInfo.imc;
   const diffImc = Number((imcInfo.imc - initImc).toFixed(2));
 
   const rawInitGordura = firstWeightRecord?.gorduraPercent ?? 35.6;
@@ -493,7 +494,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <div className="bg-slate-900/40 border border-slate-700/40 p-2.5 rounded-xl">
                   <span className="text-[11px] font-semibold text-slate-400 block truncate">IMC</span>
                   <span className="text-lg font-bold text-white block mt-0.5">{formatBRNumber(initImc, 2)}</span>
-                  <span className="text-[10px] text-amber-400/90 font-medium">Obesidade I</span>
+                  <span className={`text-[10px] font-medium ${initImcInfo.cor}`}>{initImcInfo.classificacao}</span>
                 </div>
 
                 <div className="bg-slate-900/40 border border-slate-700/40 p-2.5 rounded-xl">
